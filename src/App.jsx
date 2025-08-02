@@ -1,30 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from './hooks/useAuth';
-import Login from './components/Auth/Login';
-import Register from './components/Auth/Register';
-import Navbar from './components/Layout/Navbar';
-import Dashboard from './components/Dashboard/Dashboard';
-import Analytics from './components/Analytics/Analytics';
-import Compete from './components/Compete/Compete';
-import Settings from './components/Settings/Settings';
-import { gsap } from 'gsap';
-import { Toaster } from 'react-hot-toast';
+import React, { useState, useEffect } from "react";
+import { useAuth } from "./hooks/useAuth";
+import Login from "./components/Auth/Login";
+import Register from "./components/Auth/Register";
+import Navbar from "./components/Layout/Navbar";
+import Dashboard from "./components/Dashboard/Dashboard";
+import Analytics from "./components/Analytics/Analytics";
+import Compete from "./components/Compete/Compete";
+import Settings from "./components/Settings/Settings";
+import { gsap } from "gsap";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   const { user, loading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState("dashboard");
 
-  // useEffect(() => {
-  //   // Animate background
-  //   gsap.to('.bg-gradient', {
-  //     backgroundPosition: '400% 0%',
-  //     duration: 8,
-  //     repeat: -1,
-  //     yoyo: true,
-  //     ease: "sine.inOut"
-  //   });
-  // }, []);
+  useEffect(() => {
+    // Animate background
+    gsap.to(".bg-gradient", {
+      backgroundPosition: "400% 0%",
+      duration: 8,
+      repeat: -1,
+      yoyo: true,
+      ease: "sine.inOut",
+    });
+  }, []);
 
   useEffect(() => {
     // Initialize user in database when they first login
@@ -35,19 +35,19 @@ function App() {
 
   const initializeUser = async () => {
     try {
-      await fetch('http://localhost:5000/api/users', {
-        method: 'POST',
+      await fetch(`${import.meta.env.VITE_SERVER_URL}/api/users`, {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           uid: user.uid,
           email: user.email,
-          displayName: user.displayName || '',
+          displayName: user.displayName || "",
         }),
       });
     } catch (error) {
-      console.error('Error initializing user:', error);
+      console.error("Error initializing user:", error);
     }
   };
 
@@ -71,10 +71,10 @@ function App() {
             {/* Hero Section */}
             <div className="hidden lg:block flex-1 text-white">
               <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                ONE FOCUS
+                FocusAI Platform
               </h1>
               <p className="text-xl mb-8 text-white/80 leading-relaxed">
-                Transform your study habits with AI-powered focus tracking, 
+                Transform your study habits with AI-powered focus tracking,
                 distraction-free learning, and gamified productivity.
               </p>
               <div className="space-y-4">
@@ -84,7 +84,9 @@ function App() {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                  <span>Distraction-free YouTube player with video gallery</span>
+                  <span>
+                    Distraction-free YouTube player with video gallery
+                  </span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
@@ -102,15 +104,14 @@ function App() {
             </div>
 
             {/* Auth Form */}
-            {/* <div className="flex-shrink-0">
+{/*             <div className="flex-shrink-0">
               {isLogin ? (
                 <Login onToggle={() => setIsLogin(false)} />
               ) : (
                 <Register onToggle={() => setIsLogin(true)} />
               )}
             </div> */}
-            {/* Auth Wrapper */}
-<div className="flex-shrink-0 w-full max-w-md p-6 bg-white/5 backdrop-blur-md rounded-xl shadow-xl space-y-6 text-center">
+              <div className="flex-shrink-0 w-full max-w-md p-6 bg-white/5 backdrop-blur-md rounded-xl shadow-xl space-y-6 text-center">
   <div>
     <h2 className="text-3xl font-extrabold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
       {isLogin ? 'Welcome back' : 'Join OneFocus'}
@@ -119,14 +120,6 @@ function App() {
       {isLogin ? 'Login to your productivity dashboard' : 'Create your OneFocus account'}
     </p>
   </div>
-
-  {isLogin ? (
-    <Login onToggle={() => setIsLogin(false)} />
-  ) : (
-    <Register onToggle={() => setIsLogin(true)} />
-  )}
-</div>
-
           </div>
         </div>
       </>
@@ -135,13 +128,13 @@ function App() {
 
   const renderActiveTab = () => {
     switch (activeTab) {
-      case 'dashboard':
+      case "dashboard":
         return <Dashboard user={user} />;
-      case 'analytics':
+      case "analytics":
         return <Analytics />;
-      case 'compete':
+      case "compete":
         return <Compete currentUser={user} />;
-      case 'settings':
+      case "settings":
         return <Settings />;
       default:
         return <Dashboard user={user} />;
@@ -153,9 +146,7 @@ function App() {
       <Toaster position="top-right" />
       <div className="bg-gradient min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 bg-[length:400%_400%]">
         <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
-        <main className="min-h-[calc(100vh-4rem)]">
-          {renderActiveTab()}
-        </main>
+        <main className="min-h-[calc(100vh-4rem)]">{renderActiveTab()}</main>
       </div>
     </>
   );
