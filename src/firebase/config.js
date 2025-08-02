@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, collection, addDoc, getDocs, query, orderBy , serverTimestamp} from 'firebase/firestore';
+import { getFirestore, collection,   doc,addDoc, getDocs, query, orderBy ,where, serverTimestamp,  deleteDoc,} from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -17,4 +17,4 @@ const db = getFirestore(app);
 const messagesCollection = collection(db, 'chatMessages');
 export const auth = getAuth(app);
 export default app;
-export { db, messagesCollection, addDoc, getDocs, query, orderBy ,serverTimestamp};
+export { db, messagesCollection, addDoc,  doc, getDocs, query, orderBy, where ,  deleteDoc,serverTimestamp};

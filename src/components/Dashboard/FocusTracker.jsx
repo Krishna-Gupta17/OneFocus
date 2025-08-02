@@ -167,7 +167,7 @@ const FocusTracker = ({ onFocusChange, focusThreshold = 75 }) => {
     setCameraPermission(false);
     gsap.killTweensOf(ringRef.current);
     gsap.set(ringRef.current, { scale: 1 });
-    toast('Focus tracking stopped');
+    // toast('Focus tracking stopped');
   };
 
   const getFocusColor = (score) => {

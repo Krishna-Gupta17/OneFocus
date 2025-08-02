@@ -1,10 +1,10 @@
-// src/components/AIChat.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import {
   PaperAirplaneIcon,
   SparklesIcon,
   SpeakerWaveIcon,
-  SpeakerXMarkIcon
+  SpeakerXMarkIcon,
+  TrashIcon
 } from '@heroicons/react/24/solid';
 import { gsap } from 'gsap';
 import { fetchGeminiResponse } from '../utils/gemini';
@@ -13,16 +13,29 @@ import {
   addDoc,
   getDocs,
   query,
-  orderBy
+  orderBy,
+  where,
+  deleteDoc,
+  doc
 } from '../../firebase/config';
+import { onAuthStateChanged, getAuth } from 'firebase/auth';
 
 const AIChat = () => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [lastAIText, setLastAIText] = useState('');
+  const [user, setUser] = useState(null);
   const chatRef = useRef(null);
   const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     gsap.fromTo(chatRef.current,
@@ -32,14 +45,19 @@ const AIChat = () => {
   }, []);
 
   useEffect(() => {
+    if (!user) return;
     const fetchMessages = async () => {
-      const q = query(messagesCollection, orderBy('timestamp'));
+      const q = query(
+        messagesCollection,
+        where('userId', '==', user.uid),
+        orderBy('timestamp')
+      );
       const snapshot = await getDocs(q);
-      const loaded = snapshot.docs.map(doc => doc.data());
+      const loaded = snapshot.docs.map(doc => ({ ...doc.data(), _docId: doc.id }));
       setMessages(loaded);
     };
     fetchMessages();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     scrollToBottom();
@@ -60,13 +78,14 @@ const AIChat = () => {
   };
 
   const sendMessage = async () => {
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() || !user) return;
 
     const userInput = inputMessage;
     const userMessage = {
       id: crypto.randomUUID(),
       text: userInput,
       sender: 'user',
+      userId: user.uid,
       timestamp: new Date()
     };
 
@@ -84,6 +103,7 @@ const AIChat = () => {
         id: crypto.randomUUID(),
         text: aiText,
         sender: 'ai',
+        userId: user.uid,
         timestamp: new Date()
       };
 
@@ -94,6 +114,16 @@ const AIChat = () => {
     } finally {
       setIsTyping(false);
     }
+  };
+
+  const clearChatHistory = async () => {
+    if (!user) return;
+    const q = query(messagesCollection, where('userId', '==', user.uid));
+    const snapshot = await getDocs(q);
+    const deletions = snapshot.docs.map(docSnap => deleteDoc(doc(messagesCollection, docSnap.id)));
+    await Promise.all(deletions);
+    setMessages([]);
+    stopSpeech();
   };
 
   const quickQuestions = [
@@ -107,6 +137,10 @@ const AIChat = () => {
     "⏰ Create a study schedule for me"
   ];
 
+  if (!user) {
+    return <div className="text-white text-center mt-10">Please login to use the AI chat assistant.</div>;
+  }
+
   return (
     <div ref={chatRef} className="backdrop-blur-lg bg-white/10 p-6 rounded-2xl border border-white/20 h-[500px] flex flex-col relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-blue-500/5 pointer-events-none"></div>
@@ -117,6 +151,12 @@ const AIChat = () => {
           FOCUS GENIE
         </h3>
         <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={clearChatHistory}
+            className="text-xs flex items-center gap-1 px-3 py-1 bg-red-500/20 hover:bg-red-500/30 text-white/80 hover:text-white rounded-full border border-white/10 transition-all"
+          >
+            <TrashIcon className="w-4 h-4" /> Clear Chat
+          </button>
           <span className="text-xs text-green-400">Online</span>
           <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
         </div>

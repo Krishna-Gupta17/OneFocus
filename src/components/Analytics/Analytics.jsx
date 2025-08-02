@@ -32,7 +32,18 @@ const Analytics = () => {
     
     try {
       // Load global leaderboard for analytics
-      const globalResponse = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/leaderboard`);
+      let globalResponse = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/leaderboard`);
+
+      try {
+  // your Firestore query
+   globalResponse = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/leaderboard`);
+
+} catch (error) {
+  console.error("Firestore query failed:", error); // this logs the index URL too
+  res.status(500).json({ error: error.message });
+}
+
+      
       if (globalResponse.ok) {
         const globalData = await globalResponse.json();
         setGlobalStats(globalData);
@@ -63,11 +74,16 @@ const Analytics = () => {
     return `${hours}h ${minutes}m`;
   };
 
-  const getUserRank = () => {
-    if (!userStats || !globalStats.length) return 'N/A';
-    const userIndex = globalStats.findIndex(u => u.uid === user.uid);
-    return userIndex >= 0 ? userIndex + 1 : globalStats.length + 1;
-  };
+ const getUserRank = () => {
+  if (!userStats || !globalStats.length) return 'N/A';
+
+  const userIndex = globalStats.findIndex(u =>
+    u.uid === user.uid || u.email === user.email || u.displayName === user.displayName
+  );
+
+  return userIndex >= 0 ? userIndex + 1 : globalStats.length + 1;
+};
+
 
   const getPersonalStats = () => {
     if (!userStats) return {

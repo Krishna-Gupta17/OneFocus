@@ -82,7 +82,7 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
     if (!isActive && focusLevel >= userSettings.focusThreshold && sessionStartTime && sessionType === 'focus') {
       setTimeout(() => {
         setIsActive(true);
-        toast.success('Focus restored - Timer resumed!');
+        // toast.success('Focus restored - Timer resumed!');
         onTimerStart?.();
         
         // Success animation
