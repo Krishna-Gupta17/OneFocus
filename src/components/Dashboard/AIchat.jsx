@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { PaperAirplaneIcon, SparklesIcon, SpeakerWaveIcon, SpeakerXMarkIcon } from '@heroicons/react/24/solid';
 import { gsap } from 'gsap';
 import { fetchGeminiResponse } from '../utils/gemini';
-import { messagesCollection, addDoc, getDocs, query, orderBy } from '../../firebase/config';
+import { messagesCollection, addDoc, getDocs, query, orderBy, serverTimestamp } from '../../firebase/config';
 
 const AIChat = () => {
   const [messages, setMessages] = useState([]);
@@ -21,10 +21,14 @@ const AIChat = () => {
 
   useEffect(() => {
     const fetchMessages = async () => {
-      const q = query(messagesCollection, orderBy('timestamp'));
-      const snapshot = await getDocs(q);
-      const loaded = snapshot.docs.map(doc => doc.data());
-      setMessages(loaded);
+      try {
+        const q = query(messagesCollection, orderBy('timestamp'));
+        const snapshot = await getDocs(q);
+        const loaded = snapshot.docs.map(doc => doc.data());
+        setMessages(loaded);
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+      }
     };
     fetchMessages();
   }, []);
@@ -34,7 +38,9 @@ const AIChat = () => {
   }, [messages]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   const speak = (text) => {
@@ -47,18 +53,20 @@ const AIChat = () => {
     speechSynthesis.cancel();
   };
 
+  const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
 
     const userInput = inputMessage;
     const userMessage = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       text: userInput,
       sender: 'user',
-      timestamp: new Date()
+      timestamp: serverTimestamp()
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages(prev => [...prev, { ...userMessage, timestamp: new Date() }]);
     setInputMessage('');
     await addDoc(messagesCollection, userMessage);
     setIsTyping(true);
@@ -69,13 +77,13 @@ const AIChat = () => {
       speak(aiText);
 
       const aiMessage = {
-        id: crypto.randomUUID(),
+        id: generateId(),
         text: aiText,
         sender: 'ai',
-        timestamp: new Date()
+        timestamp: serverTimestamp()
       };
 
-      setMessages(prev => [...prev, aiMessage]);
+      setMessages(prev => [...prev, { ...aiMessage, timestamp: new Date() }]);
       await addDoc(messagesCollection, aiMessage);
     } catch (err) {
       console.error("Gemini error:", err);
@@ -94,6 +102,17 @@ const AIChat = () => {
     "🧠 Memory improvement techniques",
     "⏰ Create a study schedule for me"
   ];
+
+  const formatTime = (timestamp) => {
+    try {
+      const date = timestamp?.toDate
+        ? timestamp.toDate()
+        : new Date(timestamp?.seconds ? timestamp.seconds * 1000 : timestamp);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (err) {
+      return '';
+    }
+  };
 
   return (
     <div ref={chatRef} className="backdrop-blur-lg bg-white/10 p-6 rounded-2xl border border-white/20 h-[500px] flex flex-col relative overflow-hidden">
@@ -119,9 +138,7 @@ const AIChat = () => {
                 : 'bg-white/10 text-white border border-white/20 backdrop-blur-sm'
             }`}>
               <p className="text-sm whitespace-pre-line leading-relaxed">{message.text}</p>
-              <p className="text-xs opacity-60 mt-2">
-                {new Date(message.timestamp?.seconds ? message.timestamp.seconds * 1000 : message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </p>
+              <p className="text-xs opacity-60 mt-2">{formatTime(message.timestamp)}</p>
             </div>
           </div>
         ))}
