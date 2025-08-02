@@ -15,47 +15,47 @@ const MusicPlayer = () => {
   const audioRef = useRef(null);
 
   const tracks = [
-    { 
-      name: 'Rain Sounds', 
-      duration: '60:00', 
+    {
+      name: 'Rain Sounds',
+      duration: '60:00',
       type: 'nature',
-      url: 'https://www.soundjay.com/misc/sounds/rain-01.wav',
-      localUrl: '/audio/rain.mp3' // We'll use a placeholder
+      localUrl: '/audio/rain.mp3'
     },
-    { 
-      name: 'Forest Ambience', 
-      duration: '45:30', 
+    {
+      name: 'Forest Ambience',
+      duration: '45:30',
       type: 'nature',
-      url: 'https://www.soundjay.com/misc/sounds/forest-01.wav',
       localUrl: '/audio/forest.mp3'
     },
-    { 
-      name: 'Ocean Waves', 
-      duration: '55:15', 
+    {
+      name: 'Ocean Waves',
+      duration: '55:15',
       type: 'nature',
-      url: 'https://www.soundjay.com/misc/sounds/ocean-01.wav',
       localUrl: '/audio/ocean.mp3'
     },
-    { 
-      name: 'Lo-fi Study Beats', 
-      duration: '120:00', 
+    {
+      name: 'Lo-fi Study Beats',
+      duration: '120:00',
       type: 'music',
-      url: 'https://www.soundjay.com/misc/sounds/lofi-01.wav',
       localUrl: '/audio/lofi.mp3'
     },
-    { 
-      name: 'White Noise', 
-      duration: '∞', 
+    {
+      name: 'White Noise',
+      duration: '∞',
       type: 'noise',
-      url: 'https://www.soundjay.com/misc/sounds/whitenoise-01.wav',
       localUrl: '/audio/whitenoise.mp3'
     },
-    { 
-      name: 'Brown Noise', 
-      duration: '∞', 
+    {
+      name: 'Brown Noise',
+      duration: '∞',
       type: 'noise',
-      url: 'https://www.soundjay.com/misc/sounds/brownnoise-01.wav',
       localUrl: '/audio/brownnoise.mp3'
+    },
+    {
+      name: 'Focus Melody', // 👈 Your custom song
+      duration: '4:12',
+      type: 'music',
+      localUrl: '/audio/focus-melody.mp3' // 👈 Must be in public/audio
     }
   ];
 
@@ -72,7 +72,7 @@ const MusicPlayer = () => {
 
     const updateTime = () => setCurrentTime(audio.currentTime);
     const updateDuration = () => setDuration(audio.duration);
-    
+
     audio.addEventListener('timeupdate', updateTime);
     audio.addEventListener('loadedmetadata', updateDuration);
     audio.addEventListener('ended', handleTrackEnd);
@@ -85,7 +85,6 @@ const MusicPlayer = () => {
   }, [currentTrack]);
 
   const handleTrackEnd = () => {
-    // Auto-play next track
     const nextTrack = (currentTrack + 1) % tracks.length;
     setCurrentTrack(nextTrack);
     setIsPlaying(true);
@@ -105,8 +104,7 @@ const MusicPlayer = () => {
         setIsPlaying(true);
         toast.success(`Playing: ${tracks[currentTrack].name}`);
       }
-      
-      // Animate play button
+
       gsap.to('.play-button', {
         scale: 0.9,
         duration: 0.1,
@@ -115,8 +113,7 @@ const MusicPlayer = () => {
       });
     } catch (error) {
       console.error('Audio play error:', error);
-      toast.error('Unable to play audio. Using demo mode.');
-      // Fallback to demo mode
+      toast.error('Unable to play audio.');
       setIsPlaying(!isPlaying);
     }
   };
@@ -124,20 +121,18 @@ const MusicPlayer = () => {
   const selectTrack = (index) => {
     setCurrentTrack(index);
     setCurrentTime(0);
-    
+
     if (isPlaying) {
-      // Will auto-play the new track
       setTimeout(() => {
         const audio = audioRef.current;
         if (audio) {
           audio.play().catch(() => {
-            toast.error('Unable to play audio. Using demo mode.');
+            toast.error('Unable to play audio.');
           });
         }
       }, 100);
     }
-    
-    // Animate track selection
+
     gsap.fromTo(`[data-track="${index}"]`,
       { backgroundColor: 'rgba(139, 92, 246, 0.2)' },
       { backgroundColor: 'rgba(139, 92, 246, 0.4)', duration: 0.3 }
@@ -180,29 +175,28 @@ const MusicPlayer = () => {
   return (
     <div ref={playerRef} className="backdrop-blur-lg bg-white/10 p-6 rounded-2xl border border-white/20">
       <h3 className="text-xl font-bold text-white mb-4">Focus Music</h3>
-      
-      {/* Hidden audio element */}
+
       <audio
         ref={audioRef}
-        src={`data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT`}
+        src={tracks[currentTrack].localUrl}
         loop={tracks[currentTrack].type === 'noise'}
         volume={volume / 100}
         muted={isMuted}
       />
-      
+
       <div className="bg-black/20 rounded-lg p-4 mb-4">
         <div className="flex items-center justify-between mb-3">
           <div>
             <h4 className="text-white font-semibold">{tracks[currentTrack].name}</h4>
             <p className="text-white/60 text-sm">
-              {formatTime(currentTime)} / {tracks[currentTrack].duration}
+              {formatTime(currentTime)} / {tracks[currentTrack].duration !== '∞' ? tracks[currentTrack].duration : formatTime(duration)}
             </p>
           </div>
           <div className="text-2xl">
             {getTrackIcon(tracks[currentTrack].type)}
           </div>
         </div>
-        
+
         <div className="flex items-center gap-4">
           <button
             onClick={togglePlay}
@@ -210,16 +204,16 @@ const MusicPlayer = () => {
           >
             {isPlaying ? <PauseIcon className="w-6 h-6" /> : <PlayIcon className="w-6 h-6" />}
           </button>
-          
+
           <div className="flex-1">
             <div className="w-full bg-white/10 rounded-full h-2 cursor-pointer">
-              <div 
+              <div
                 className="h-2 bg-purple-500 rounded-full transition-all duration-300"
                 style={{ width: `${progress}%` }}
               ></div>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <button
               onClick={toggleMute}
@@ -267,9 +261,9 @@ const MusicPlayer = () => {
           </div>
         ))}
       </div>
-      
+
       <div className="mt-4 text-xs text-white/60 text-center">
-        <p>🎧 Demo mode - Real audio files would be loaded from server</p>
+        <p>🎧 Local audio - Your custom songs are now playable</p>
       </div>
     </div>
   );

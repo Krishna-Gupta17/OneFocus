@@ -33,8 +33,8 @@ const Leaderboard = ({ currentUser, showFriendsOnly = false }) => {
     
     try {
       const endpoint = showFriendsOnly 
-        ? `http://localhost:5000/api/users/${user.uid}/friends-leaderboard`
-        : 'http://localhost:5000/api/leaderboard';
+        ? `${import.meta.env.VITE_SERVER_URL}/api/users/${user.uid}/friends-leaderboard`
+        : `${import.meta.env.VITE_SERVER_URL}/api/leaderboard`;
         
       const response = await fetch(endpoint);
       if (response.ok) {
@@ -58,7 +58,7 @@ const Leaderboard = ({ currentUser, showFriendsOnly = false }) => {
     if (!user) return;
     
     try {
-      const response = await fetch(`http://localhost:5000/api/users/${user.uid}`);
+      const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/users/${user.uid}`);
       if (response.ok) {
         const userData = await response.json();
         setFriendRequests(userData.friendRequests || []);
@@ -75,7 +75,7 @@ const Leaderboard = ({ currentUser, showFriendsOnly = false }) => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/users/${user.uid}/send-friend-request`, {
+      const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/users/${user.uid}/send-friend-request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -99,7 +99,7 @@ const Leaderboard = ({ currentUser, showFriendsOnly = false }) => {
 
   const acceptFriendRequest = async (fromUid) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/users/${user.uid}/accept-friend-request`, {
+      const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/users/${user.uid}/accept-friend-request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

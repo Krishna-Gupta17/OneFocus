@@ -32,14 +32,14 @@ const Analytics = () => {
     
     try {
       // Load global leaderboard for analytics
-      const globalResponse = await fetch('http://localhost:5000/api/leaderboard');
+      const globalResponse = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/leaderboard`);
       if (globalResponse.ok) {
         const globalData = await globalResponse.json();
         setGlobalStats(globalData);
       }
       
       // Load user's personal stats
-      const userResponse = await fetch(`http://localhost:5000/api/users/${user.uid}`);
+      const userResponse = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/users/${user.uid}`);
       if (userResponse.ok) {
         const userData = await userResponse.json();
         setUserStats(userData);

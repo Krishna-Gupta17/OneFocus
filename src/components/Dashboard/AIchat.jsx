@@ -102,7 +102,7 @@ const AIChat = () => {
       <div className="flex items-center gap-2 mb-4 relative z-10">
         <SparklesIcon className="w-6 h-6 text-purple-400 animate-spin" />
         <h3 className="text-xl font-bold text-white bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-          AI Study Assistant GPT-4 (Gemini)
+          FOCUS GENIE
         </h3>
         <div className="ml-auto flex items-center gap-2">
           <span className="text-xs text-green-400">Online</span>

@@ -15,16 +15,16 @@ function App() {
   const [isLogin, setIsLogin] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  useEffect(() => {
-    // Animate background
-    gsap.to('.bg-gradient', {
-      backgroundPosition: '400% 0%',
-      duration: 8,
-      repeat: -1,
-      yoyo: true,
-      ease: "sine.inOut"
-    });
-  }, []);
+  // useEffect(() => {
+  //   // Animate background
+  //   gsap.to('.bg-gradient', {
+  //     backgroundPosition: '400% 0%',
+  //     duration: 8,
+  //     repeat: -1,
+  //     yoyo: true,
+  //     ease: "sine.inOut"
+  //   });
+  // }, []);
 
   useEffect(() => {
     // Initialize user in database when they first login
@@ -35,7 +35,7 @@ function App() {
 
   const initializeUser = async () => {
     try {
-      await fetch('http://localhost:5000/api/users', {
+      await fetch(`${import.meta.env.VITE_SERVER_URL}/api/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -71,7 +71,7 @@ function App() {
             {/* Hero Section */}
             <div className="hidden lg:block flex-1 text-white">
               <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                FocusAI Platform
+                ONE FOCUS
               </h1>
               <p className="text-xl mb-8 text-white/80 leading-relaxed">
                 Transform your study habits with AI-powered focus tracking, 
@@ -102,13 +102,31 @@ function App() {
             </div>
 
             {/* Auth Form */}
-            <div className="flex-shrink-0">
+            {/* <div className="flex-shrink-0">
               {isLogin ? (
                 <Login onToggle={() => setIsLogin(false)} />
               ) : (
                 <Register onToggle={() => setIsLogin(true)} />
               )}
-            </div>
+            </div> */}
+            {/* Auth Wrapper */}
+<div className="flex-shrink-0 w-full max-w-md p-6 bg-white/5 backdrop-blur-md rounded-xl shadow-xl space-y-6 text-center">
+  <div>
+    <h2 className="text-3xl font-extrabold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+      {isLogin ? 'Welcome back' : 'Join OneFocus'}
+    </h2>
+    <p className="text-white/70 mt-2 text-sm">
+      {isLogin ? 'Login to your productivity dashboard' : 'Create your OneFocus account'}
+    </p>
+  </div>
+
+  {isLogin ? (
+    <Login onToggle={() => setIsLogin(false)} />
+  ) : (
+    <Register onToggle={() => setIsLogin(true)} />
+  )}
+</div>
+
           </div>
         </div>
       </>

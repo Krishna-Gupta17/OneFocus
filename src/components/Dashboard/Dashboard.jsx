@@ -56,7 +56,7 @@ const Dashboard = ({ user }) => {
     if (!user) return;
     
     try {
-      const response = await fetch(`http://localhost:5000/api/users/${user.uid}`);
+      const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/users/${user.uid}`);
       if (response.ok) {
         const userData = await response.json();
         setTasks(userData.tasks || []);
@@ -107,7 +107,7 @@ const Dashboard = ({ user }) => {
     if (!user) return;
     
     try {
-      await fetch(`http://localhost:5000/api/users/${user.uid}`, {
+      await fetch(`${import.meta.env.VITE_SERVER_URL}/api/users/${user.uid}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

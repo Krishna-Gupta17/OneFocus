@@ -38,7 +38,7 @@ const Register = ({ onToggle }) => {
   return (
     <div className="w-full max-w-md">
       <div className="backdrop-blur-lg bg-white/10 p-8 rounded-2xl border border-white/20 shadow-2xl">
-        <h2 className="text-3xl font-bold text-white mb-6 text-center">Join FocusAI</h2>
+        <h2 className="text-3xl font-bold text-white mb-6 text-center"></h2>
         
         {error && (
           <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg mb-4">
