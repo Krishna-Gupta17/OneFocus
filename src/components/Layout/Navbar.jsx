@@ -25,10 +25,9 @@ const Navbar = ({ activeTab, setActiveTab }) => {
           <div className="flex items-center">
             <div className="flex items-center gap-2">
               <div className="">
-                <span className="text-white font-bold text-sm"><span className="text-white font-bold text-sm">
-  <img src="src\components\Layout\Asset 1@4x 4.png" alt="icon" className="w-4 h-4 scale-[1.7]" />
-</span>
-</span>
+                <span className="text-white font-bold text-sm">
+                  <img src="src\components\Layout\Asset 1@4x 4[1].png" alt="icon" className="w-4 h-4 scale-[1.7]" ></img>
+                </span>
               </div>
               <h1 className="text-xl font-bold text-white">ONE FOCUS</h1>
             </div>
