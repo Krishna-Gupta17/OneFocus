@@ -15,16 +15,16 @@ function App() {
   const [isLogin, setIsLogin] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  useEffect(() => {
-    // Animate background
-    gsap.to('.bg-gradient', {
-      backgroundPosition: '400% 0%',
-      duration: 8,
-      repeat: -1,
-      yoyo: true,
-      ease: "sine.inOut"
-    });
-  }, []);
+  // useEffect(() => {
+  //   // Animate background
+  //   gsap.to('.bg-gradient', {
+  //     backgroundPosition: '400% 0%',
+  //     duration: 8,
+  //     repeat: -1,
+  //     yoyo: true,
+  //     ease: "sine.inOut"
+  //   });
+  // }, []);
 
   useEffect(() => {
     // Initialize user in database when they first login
