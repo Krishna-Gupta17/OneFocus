@@ -19,8 +19,8 @@ const FaceDetector = () => {
 
       const faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
         baseOptions: {
-          modelAssetPath:
-            'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/face_landmarker.task',
+          modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float32/1/face_landmarker.task',
+
           delegate: 'GPU',
         },
         outputFaceBlendshapes: true,
