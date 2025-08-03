@@ -18,6 +18,7 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
     breakDuration: 5
   });
   const timerRef = useRef(null);
+  const floatAnimation = useRef(null);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -34,10 +35,10 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
         duration: 1.2, 
         ease: "back.out(1.7)",
         onComplete: () => {
-          // Add floating animation
-          gsap.to(timerRef.current, {
-            y: -10,
-            duration: 2,
+          // Add controlled floating animation
+          floatAnimation.current = gsap.to(timerRef.current, {
+            y: -3,
+            duration: 3,
             repeat: -1,
             yoyo: true,
             ease: "sine.inOut"
@@ -45,6 +46,10 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
         }
       }
     );
+
+    return () => {
+      if (floatAnimation.current) floatAnimation.current.kill();
+    };
   }, []);
 
   useEffect(() => {
@@ -82,7 +87,6 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
     if (!isActive && focusLevel >= userSettings.focusThreshold && sessionStartTime && sessionType === 'focus') {
       setTimeout(() => {
         setIsActive(true);
-        // toast.success('Focus restored - Timer resumed!');
         onTimerStart?.();
         
         // Success animation
@@ -255,6 +259,7 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
     if (!isActive) {
       setTime(customTime * 60);
       setUserSettings(prev => ({ ...prev, timerDuration: customTime }));
+      setShowSettings(false); // Close settings after applying
       toast.success(`Timer set to ${customTime} minutes`);
     }
   };
@@ -270,7 +275,17 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
     : ((userSettings.breakDuration * 60 - time) / (userSettings.breakDuration * 60)) * 100;
 
   return (
-    <div ref={timerRef} className="backdrop-blur-lg bg-white/10 p-6 rounded-2xl border border-white/20 relative overflow-hidden">
+    <div 
+      ref={timerRef} 
+      className="backdrop-blur-lg bg-white/10 p-6 rounded-2xl border border-white/20 relative overflow-hidden"
+      onMouseEnter={() => {
+        if (floatAnimation.current) floatAnimation.current.pause();
+        gsap.to(timerRef.current, { y: 0, duration: 0.3 });
+      }}
+      onMouseLeave={() => {
+        if (floatAnimation.current) floatAnimation.current.play();
+      }}
+    >
       {/* Sci-fi background effects */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-blue-500/10 to-cyan-500/10 animate-pulse"></div>
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500"></div>
