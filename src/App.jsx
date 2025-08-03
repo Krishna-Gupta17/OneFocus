@@ -9,25 +9,14 @@ import Compete from './components/Compete/Compete';
 import Settings from './components/Settings/Settings';
 import { gsap } from 'gsap';
 import { Toaster } from 'react-hot-toast';
+import AIChatWidget from './components/Dashboard/AIchat'; // ✅ Chat widget
 
 function App() {
   const { user, loading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  // useEffect(() => {
-  //   // Animate background
-  //   gsap.to('.bg-gradient', {
-  //     backgroundPosition: '400% 0%',
-  //     duration: 8,
-  //     repeat: -1,
-  //     yoyo: true,
-  //     ease: "sine.inOut"
-  //   });
-  // }, []);
-
   useEffect(() => {
-    // Initialize user in database when they first login
     if (user) {
       initializeUser();
     }
@@ -102,33 +91,24 @@ function App() {
             </div>
 
             {/* Auth Form */}
-            {/* <div className="flex-shrink-0">
+            <div className="flex-shrink-0 w-full max-w-md p-6 bg-white/5 backdrop-blur-md rounded-xl shadow-xl space-y-6 text-center">
+              <div>
+                <h2 className="text-3xl font-extrabold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                  {isLogin ? 'Welcome back' : 'Join OneFocus'}
+                </h2>
+                <p className="text-white/70 mt-2 text-sm">
+                  {isLogin ? 'Login to your productivity dashboard' : 'Create your OneFocus account'}
+                </p>
+              </div>
               {isLogin ? (
                 <Login onToggle={() => setIsLogin(false)} />
               ) : (
                 <Register onToggle={() => setIsLogin(true)} />
               )}
-            </div> */}
-            {/* Auth Wrapper */}
-<div className="flex-shrink-0 w-full max-w-md p-6 bg-white/5 backdrop-blur-md rounded-xl shadow-xl space-y-6 text-center">
-  <div>
-    <h2 className="text-3xl font-extrabold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-      {isLogin ? 'Welcome back' : 'Join OneFocus'}
-    </h2>
-    <p className="text-white/70 mt-2 text-sm">
-      {isLogin ? 'Login to your productivity dashboard' : 'Create your OneFocus account'}
-    </p>
-  </div>
-
-  {isLogin ? (
-    <Login onToggle={() => setIsLogin(false)} />
-  ) : (
-    <Register onToggle={() => setIsLogin(true)} />
-  )}
-</div>
-
+            </div>
           </div>
         </div>
+        {/* ✅ Chat widget is outside of logic, so no need to duplicate it */}
       </>
     );
   }
@@ -157,6 +137,8 @@ function App() {
           {renderActiveTab()}
         </main>
       </div>
+      {/* ✅ Only one instance globally */}
+      <AIChatWidget />
     </>
   );
 }
