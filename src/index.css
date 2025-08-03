@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+html,
+body,
+#root {
+  height: 100%;
+  overflow: visible;
+  position: relative;
+}
+
 /* Custom animations */
 @keyframes fadeIn {
   from {
