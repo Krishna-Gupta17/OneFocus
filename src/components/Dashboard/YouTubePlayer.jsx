@@ -32,7 +32,6 @@ const YouTubePlayer = () => {
 
   const loadVideoGallery = async () => {
     if (!user) return;
-
     try {
       const response = await fetch(`${API_BASE}/api/users/${user.uid}`);
       if (response.ok) {
@@ -65,13 +64,10 @@ const YouTubePlayer = () => {
 
   const saveVideoToGallery = async (videoData) => {
     if (!user) return;
-
     try {
       const response = await fetch(`${API_BASE}/api/users/${user.uid}/videos`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(videoData),
       });
 
@@ -105,9 +101,7 @@ const YouTubePlayer = () => {
     setCurrentVideo(videoData);
 
     const exists = videoGallery.some(v => v.id === videoId);
-    if (!exists) {
-      await saveVideoToGallery(videoData);
-    }
+    if (!exists) await saveVideoToGallery(videoData);
 
     setVideoUrl('');
 
@@ -120,7 +114,6 @@ const YouTubePlayer = () => {
   const selectFromGallery = (video) => {
     setCurrentVideo(video);
     setIsPlaying(false);
-
     gsap.fromTo('.video-container',
       { scale: 0.95 },
       { scale: 1, duration: 0.3, ease: "back.out(1.7)" }
@@ -129,23 +122,17 @@ const YouTubePlayer = () => {
 
   const removeFromGallery = async (videoId) => {
     if (!user) return;
-
     try {
       const updatedGallery = videoGallery.filter(v => v.id !== videoId);
-
       const response = await fetch(`${API_BASE}/api/users/${user.uid}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ videoGallery: updatedGallery }),
       });
 
       if (response.ok) {
         setVideoGallery(updatedGallery);
-        if (currentVideo?.id === videoId) {
-          setCurrentVideo(null);
-        }
+        if (currentVideo?.id === videoId) setCurrentVideo(null);
         toast.success('Video removed from gallery');
       }
     } catch (error) {
@@ -157,7 +144,6 @@ const YouTubePlayer = () => {
   const togglePlay = () => {
     setIsPlaying(!isPlaying);
     toast(isPlaying ? 'Video paused' : 'Video playing');
-    // YouTube iframe doesn't react dynamically unless using IFrame API
   };
 
   const toggleMute = () => {
@@ -166,12 +152,13 @@ const YouTubePlayer = () => {
   };
 
   return (
-    <div ref={playerRef} className="backdrop-blur-lg bg-white/10 p-6 rounded-2xl border border-white/20">
+    <div ref={playerRef} className="max-w-3xl mx-auto backdrop-blur-lg bg-white/10 p-4 sm:p-6 rounded-2xl border border-white/20">
       <h3 className="text-xl font-bold text-white mb-4">Distraction-Free Video Player</h3>
 
-      <div className="flex gap-2 mb-4">
+      <div className="flex flex-col sm:flex-row gap-2 mb-4">
         <input
           type="text"
+          inputMode="url"
           value={videoUrl}
           onChange={(e) => setVideoUrl(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && loadVideo()}
@@ -199,13 +186,13 @@ const YouTubePlayer = () => {
             />
           </div>
 
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
             <div>
               <h4 className="text-white font-semibold">{currentVideo.title}</h4>
               <p className="text-white/60 text-sm">Clean YouTube experience</p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
               <button
                 onClick={togglePlay}
                 className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-full transform hover:scale-110 transition-all duration-200"
@@ -226,7 +213,7 @@ const YouTubePlayer = () => {
                 max="100"
                 value={volume}
                 onChange={(e) => setVolume(e.target.value)}
-                className="w-20 h-2 bg-white/10 rounded-lg appearance-none"
+                className="w-full sm:w-20 h-2 bg-white/10 rounded-lg appearance-none"
               />
             </div>
           </div>
@@ -241,7 +228,6 @@ const YouTubePlayer = () => {
         </div>
       )}
 
-      {/* Video Gallery */}
       <div className="border-t border-white/10 pt-4">
         <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
           📚 Your Video Library
@@ -249,11 +235,11 @@ const YouTubePlayer = () => {
         </h4>
 
         {videoGallery.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-64 overflow-y-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-64 overflow-y-auto snap-y snap-mandatory">
             {videoGallery.map((video) => (
               <div
                 key={video.id}
-                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-white/10 ${
+                className={`flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-white/10 ${
                   currentVideo?.id === video.id ? 'bg-red-500/20 border border-red-500/30' : 'bg-white/5'
                 }`}
                 onClick={() => selectFromGallery(video)}
@@ -261,7 +247,7 @@ const YouTubePlayer = () => {
                 <img
                   src={video.thumbnail}
                   alt={video.title}
-                  className="w-16 h-12 object-cover rounded"
+                  className="w-full sm:w-16 h-24 sm:h-12 object-cover rounded"
                   onError={(e) => {
                     if (!e.target.dataset.fallback) {
                       e.target.src = `https://img.youtube.com/vi/${video.id}/default.jpg`;
