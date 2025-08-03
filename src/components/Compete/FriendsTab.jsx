@@ -1,72 +1,28 @@
-// src/components/Compete/FriendsTab.jsx
 import React, { useEffect, useState } from 'react';
-import { db } from '../../firebase/config'; // your firebase config
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  onSnapshot,
-  query,
-  updateDoc,
-  where,
-  addDoc,
-  deleteDoc
-} from 'firebase/firestore';
 import { UserIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
+
 
 const FriendsTab = ({ currentUser }) => {
   const [friends, setFriends] = useState([]);
   const [requests, setRequests] = useState([]);
   const [emailInput, setEmailInput] = useState('');
 
-  useEffect(() => {
-    if (!currentUser?.uid) return;
-
-    const userRef = doc(db, 'users', currentUser.uid);
-    const unsub = onSnapshot(userRef, async (snap) => {
-      const userData = snap.data();
-      if (!userData?.friends) return;
-
-      const friendDocs = await Promise.all(
-        userData.friends.map(id => getDoc(doc(db, 'users', id)))
-      );
-
-      const list = friendDocs
-        .filter(d => d.exists())
-        .map(d => ({ uid: d.id, ...d.data() }));
-
-      setFriends(list);
-    });
-
-    return () => unsub();
-  }, [currentUser]);
+  const fetchUserData = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/users/${currentUser.uid}`);
+      const data = await res.json();
+      setFriends(data.friends || []);
+      setRequests(data.friendRequests || []);
+    } catch (err) {
+      console.error('Failed to fetch user data', err);
+    }
+  };
 
   useEffect(() => {
-    if (!currentUser?.uid) return;
-
-    const q = query(
-      collection(db, 'friend_requests'),
-      where('to', '==', currentUser.uid),
-      where('status', '==', 'pending')
-    );
-
-    const unsub = onSnapshot(q, async (snap) => {
-      const reqs = await Promise.all(
-        snap.docs.map(async docSnap => {
-          const fromUser = await getDoc(doc(db, 'users', docSnap.data().from));
-          return {
-            id: docSnap.id,
-            fromId: docSnap.data().from,
-            fromName: fromUser.data()?.name || 'Anonymous'
-          };
-        })
-      );
-      setRequests(reqs);
-    });
-
-    return () => unsub();
+    if (currentUser?.uid) {
+      fetchUserData();
+    }
   }, [currentUser]);
 
   const sendRequest = async () => {
@@ -76,21 +32,16 @@ const FriendsTab = ({ currentUser }) => {
         return;
       }
 
-      const q = query(collection(db, 'users'), where('email', '==', emailInput));
-      const snap = await getDocs(q);
-
-      if (snap.empty) return toast.error('User not found');
-
-      const friendDoc = snap.docs[0];
-      const friendId = friendDoc.id;
-
-      await addDoc(collection(db, 'friend_requests'), {
-        from: currentUser.uid,
-        to: friendId,
-        status: 'pending'
+      const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/users/${currentUser.uid}/send-friend-request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetEmail: emailInput })
       });
 
-      toast.success('Request sent!');
+      const data = await res.json();
+
+      if (!res.ok) return toast.error(data.message || 'Error sending request');
+      toast.success(data.message || 'Request sent!');
       setEmailInput('');
     } catch (err) {
       console.error(err);
@@ -98,34 +49,23 @@ const FriendsTab = ({ currentUser }) => {
     }
   };
 
-  const acceptRequest = async (id, fromId) => {
+  const acceptRequest = async (fromUid) => {
     try {
-      // Add each other as friends
-      const myRef = doc(db, 'users', currentUser.uid);
-      const friendRef = doc(db, 'users', fromId);
-
-      await updateDoc(myRef, {
-        friends: [...friends.map(f => f.uid), fromId]
+      const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/users/${currentUser.uid}/accept-friend-request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fromUid })
       });
 
-      const friendSnap = await getDoc(friendRef);
-      const friendFriends = friendSnap.data().friends || [];
-      await updateDoc(friendRef, {
-        friends: [...friendFriends, currentUser.uid]
-      });
+      const data = await res.json();
 
-      // Remove request
-      await deleteDoc(doc(db, 'friend_requests', id));
-      toast.success('Friend added!');
+      if (!res.ok) return toast.error(data.message || 'Error');
+      toast.success(data.message || 'Friend added!');
+      fetchUserData();
     } catch (err) {
-      toast.error('Error accepting request');
       console.error(err);
+      toast.error('Error accepting request');
     }
-  };
-
-  const rejectRequest = async (id) => {
-    await deleteDoc(doc(db, 'friend_requests', id));
-    toast('Request rejected');
   };
 
   return (
@@ -153,15 +93,19 @@ const FriendsTab = ({ currentUser }) => {
         <h3 className="text-xl font-bold mb-2">Incoming Requests</h3>
         {requests.length === 0 && <p className="text-white/60">No requests</p>}
         {requests.map(req => (
-          <div key={req.id} className="flex items-center justify-between bg-white/10 px-4 py-2 rounded mb-2">
+          <div key={req.from} className="flex items-center justify-between bg-white/10 px-4 py-2 rounded mb-2">
             <span>{req.fromName}</span>
             <div className="flex gap-2">
-              <button onClick={() => acceptRequest(req.id, req.fromId)} className="text-green-500 hover:scale-110 transition">
+              <button
+                onClick={() => acceptRequest(req.from)}
+                className="text-green-500 hover:scale-110 transition"
+              >
                 <CheckIcon className="w-5 h-5" />
               </button>
-              <button onClick={() => rejectRequest(req.id)} className="text-red-500 hover:scale-110 transition">
+              {/* Optionally, add a reject button by extending backend */}
+              {/* <button onClick={() => rejectRequest(req.from)} className="text-red-500">
                 <XMarkIcon className="w-5 h-5" />
-              </button>
+              </button> */}
             </div>
           </div>
         ))}
@@ -175,8 +119,8 @@ const FriendsTab = ({ currentUser }) => {
             <li key={friend.uid} className="bg-white/10 p-3 rounded flex items-center gap-3">
               <UserIcon className="w-6 h-6 text-purple-400" />
               <div>
-                <p className="font-semibold">{friend.name}</p>
-                <p className="text-sm text-white/60">{friend.online ? '🟢 Online' : '⚪ Offline'}</p>
+                <p className="font-semibold">{friend.displayName || friend.email}</p>
+                <p className="text-sm text-white/60">⚪ Status unknown</p>
               </div>
             </li>
           ))}

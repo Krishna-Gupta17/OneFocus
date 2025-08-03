@@ -1,120 +1,134 @@
-// src/components/Compete/GameTab.jsx
-import React, { useEffect, useState } from 'react';
-import {
-  collection,
-  addDoc,
-  doc,
-  onSnapshot,
-  updateDoc,
-  getDoc,
-  arrayUnion,
-  deleteDoc,
-  setDoc,
-} from 'firebase/firestore';
-import { db } from '../../firebase/config';
+import React, { useEffect, useState, useRef } from 'react';
+import axios from 'axios';
 import toast from 'react-hot-toast';
-import { PlayIcon, StopIcon, UserGroupIcon } from '@heroicons/react/24/solid';
+import {
+  PlayIcon,
+  StopIcon,
+  UserGroupIcon,
+  PlusIcon,
+} from '@heroicons/react/24/solid';
+import { Howl } from 'howler';
 
 const GameTab = ({ currentUser }) => {
   const [roomId, setRoomId] = useState(null);
   const [roomData, setRoomData] = useState(null);
   const [allFriends, setAllFriends] = useState([]);
+  const [filteredFriends, setFilteredFriends] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const pollingIntervalRef = useRef(null);
+
+  const joinSound = new Howl({
+    src: ['/sounds/join.mp3'], // Ensure this file exists in your public/sounds directory
+    volume: 0.5,
+  });
 
   const fetchFriends = async () => {
-    const userRef = doc(db, 'users', currentUser.uid);
-    const userSnap = await getDoc(userRef);
-    const friendIds = userSnap.data().friends || [];
-
-    const friends = await Promise.all(
-      friendIds.map(async (uid) => {
-        const fSnap = await getDoc(doc(db, 'users', uid));
-        return fSnap.exists() ? { uid, ...fSnap.data() } : null;
-      })
-    );
-
-    setAllFriends(friends.filter(Boolean));
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_SERVER_URL}/compete/api/friends/${currentUser.uid}`);
+      const friends = res.data || [];
+      setAllFriends(friends);
+      setFilteredFriends(friends);
+    } catch (err) {
+      console.error('Error fetching friends:', err);
+    }
   };
 
-  useEffect(() => {
-    fetchFriends();
-  }, []);
+  const fetchRoomData = async (id) => {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_SERVER_URL}/compete/api/games/${id}`);
+      if (res.data) {
+        const prevCount = roomData?.participants?.length || 0;
+        const newCount = res.data.participants.length;
+        if (newCount > prevCount) joinSound.play();
+
+        setRoomData(res.data);
+      }
+    } catch (err) {
+      console.error('Error fetching room data:', err);
+    }
+  };
 
   const createRoom = async () => {
     setLoading(true);
     try {
-      const docRef = await addDoc(collection(db, 'games'), {
+      const res = await axios.post(`${import.meta.env.VITE_SERVER_URL}/compete/api/rooms`, {
         host: currentUser.uid,
         participants: [currentUser.uid],
         status: 'waiting',
-        createdAt: new Date()
       });
-      setRoomId(docRef.id);
+      setRoomId(res.data._id);
       toast.success('Room created');
     } catch (err) {
       toast.error('Failed to create room');
       console.error(err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const inviteFriend = async (friendId) => {
-    const ref = doc(db, 'games', roomId);
-    await updateDoc(ref, {
-      participants: arrayUnion(friendId)
-    });
-    toast.success('Friend invited!');
+    try {
+      await axios.post(`${import.meta.env.VITE_SERVER_URL}/compete/api/games/${roomId}/invite`, { friendId });
+      toast.success('Friend invited!');
+      fetchRoomData(roomId);
+    } catch (err) {
+      toast.error('Invite failed');
+      console.error(err);
+    }
   };
 
-  useEffect(() => {
-    if (!roomId) return;
-    const unsub = onSnapshot(doc(db, 'games', roomId), (snap) => {
-      if (snap.exists()) setRoomData(snap.data());
-    });
-    return () => unsub();
-  }, [roomId]);
-
   const startMatch = async () => {
-    if (!roomData) return;
-
-    const roomRef = doc(db, 'games', roomId);
-    await updateDoc(roomRef, {
-      status: 'in-progress',
-      startTime: Date.now()
-    });
-
-    toast.success('Match started!');
+    try {
+      await axios.post(`${import.meta.env.VITE_SERVER_URL}/compete/api/games/${roomId}/start`);
+      toast.success('Match started!');
+      fetchRoomData(roomId);
+    } catch (err) {
+      toast.error('Failed to start match');
+      console.error(err);
+    }
   };
 
   const endMatch = async () => {
-    const now = Date.now();
-    const durations = {};
+    try {
+      await axios.post(`${import.meta.env.VITE_SERVER_URL}/compete/api/games/${roomId}/end`);
+      toast.success('Match ended!');
+      setRoomId(null);
+      setRoomData(null);
+      clearInterval(pollingIntervalRef.current);
+    } catch (err) {
+      toast.error('Failed to end match');
+      console.error(err);
+    }
+  };
 
-    roomData.participants.forEach((uid) => {
-      const start = roomData.startTime || now;
-      const timeSpent = Math.floor((now - start) / 1000);
-      durations[uid] = timeSpent;
-    });
-
-    const winner = Object.entries(durations).sort((a, b) => b[1] - a[1])[0][0];
-
-    await addDoc(collection(db, 'matches'), {
-      participants: roomData.participants,
-      durations,
-      winner,
-      createdAt: new Date()
-    });
-
-    await deleteDoc(doc(db, 'games', roomId));
-    toast.success('Match ended and saved!');
-    setRoomId(null);
-    setRoomData(null);
+  const handleSearch = (e) => {
+    const val = e.target.value.toLowerCase();
+    setSearchQuery(val);
+    setFilteredFriends(allFriends.filter(f => f.name.toLowerCase().includes(val)));
   };
 
   const getName = (uid) => {
-    const friend = allFriends.find(f => f.uid === uid);
-    return friend?.name || (uid === currentUser.uid ? 'You' : 'Anonymous');
+    if (uid === currentUser.uid) return 'You';
+    const user = allFriends.find(f => f.uid === uid);
+    return user?.name || 'Anonymous';
   };
+
+  useEffect(() => {
+    if (currentUser?.uid) fetchFriends();
+  }, [currentUser?.uid]);
+
+  useEffect(() => {
+    if (!roomId) return;
+
+    fetchRoomData(roomId);
+    const interval = setInterval(() => fetchRoomData(roomId), 2000);
+    pollingIntervalRef.current = interval;
+
+    return () => clearInterval(interval);
+  }, [roomId]);
+
+  const shareLink = `${window.location.origin}/room/${roomId}`;
 
   return (
     <div className="space-y-6">
@@ -135,8 +149,21 @@ const GameTab = ({ currentUser }) => {
               <p className="text-lg font-semibold text-yellow-300">{roomId}</p>
             </div>
             <span className="bg-white/10 px-3 py-1 rounded-full text-sm">
-              {roomData?.status.toUpperCase()}
+              {roomData?.status?.toUpperCase()}
             </span>
+          </div>
+
+          <div>
+            <p className="text-sm text-white/60">Invite via link:</p>
+            <input
+              value={shareLink}
+              readOnly
+              className="w-full p-2 bg-black/20 text-white rounded text-sm"
+              onClick={(e) => {
+                navigator.clipboard.writeText(shareLink);
+                toast.success('Link copied!');
+              }}
+            />
           </div>
 
           <div>
@@ -152,18 +179,34 @@ const GameTab = ({ currentUser }) => {
             <>
               <div>
                 <h4 className="font-semibold mb-2">Invite Friends:</h4>
+                <input
+                  value={searchQuery}
+                  onChange={handleSearch}
+                  placeholder="Search by name"
+                  className="w-full p-2 mb-3 rounded bg-white/10 text-white placeholder:text-white/60"
+                />
                 <div className="flex flex-wrap gap-2">
-                  {allFriends.map(friend => (
-                    !roomData.participants.includes(friend.uid) && (
-                      <button
-                        key={friend.uid}
-                        onClick={() => inviteFriend(friend.uid)}
-                        className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition"
-                      >
-                        {friend.name}
-                      </button>
-                    )
-                  ))}
+                  {filteredFriends
+                    .filter(friend => !roomData.participants.includes(friend.uid))
+                    .map(friend => (
+                      <div key={friend.uid} className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded shadow">
+                        <img
+                          src={friend.avatarUrl || '/default-avatar.png'}
+                          alt={friend.name}
+                          className="w-6 h-6 rounded-full object-cover"
+                        />
+                        <span>{friend.name}</span>
+                        <button
+                          onClick={() => inviteFriend(friend.uid)}
+                          className="hover:text-green-300 transition"
+                        >
+                          <PlusIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  {filteredFriends.length === 0 && (
+                    <p className="text-white/50 text-sm italic">No friends found.</p>
+                  )}
                 </div>
               </div>
               <button
