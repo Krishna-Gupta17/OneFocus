@@ -200,14 +200,10 @@ const Dashboard = ({ user }) => {
         </div>
       </div>
 
-      <div className="dashboard-card">
-        <AIChat />
-      </div>
+      
       
       {/* Completion celebration element */}
-      <div className="completion-celebration fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-6xl pointer-events-none opacity-0">
-        🎉
-      </div>
+    
     </div>
   );
 };
