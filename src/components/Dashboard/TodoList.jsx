@@ -8,7 +8,6 @@ const TodoList = ({ tasks = [], onUpdateTasks }) => {
   const listRef = useRef(null);
 
   useEffect(() => {
-    // Animate list items
     gsap.fromTo(
       listRef.current?.children || [],
       { x: -50, opacity: 0 },
@@ -25,17 +24,17 @@ const TodoList = ({ tasks = [], onUpdateTasks }) => {
         priority,
         createdAt: new Date()
       };
-      
+
       onUpdateTasks([...tasks, task]);
       setNewTask('');
-      
-      // Animate new task addition
+
       setTimeout(() => {
         const newTaskElement = listRef.current?.lastElementChild;
         if (newTaskElement) {
-          gsap.fromTo(newTaskElement,
+          gsap.fromTo(
+            newTaskElement,
             { scale: 0, opacity: 0 },
-            { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(1.7)" }
+            { scale: 1, opacity: 1, duration: 0.5, ease: 'back.out(1.7)' }
           );
         }
       }, 0);
@@ -74,37 +73,39 @@ const TodoList = ({ tasks = [], onUpdateTasks }) => {
   };
 
   return (
-    <div className="backdrop-blur-lg bg-white/10 p-6 rounded-2xl border border-white/20">
+    <div className="backdrop-blur-lg bg-white/10 p-4 md:p-6 rounded-2xl border border-white/20">
       <h3 className="text-xl font-bold text-white mb-4">Study Tasks</h3>
-      
-      <div className="flex gap-2 mb-4">
+
+      {/* Responsive Input Row */}
+      <div className="flex flex-col sm:flex-row gap-2 mb-4">
         <input
           type="text"
           value={newTask}
           onChange={(e) => setNewTask(e.target.value)}
           placeholder="Add a new task..."
-          className="flex-1 p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
-          onKeyPress={(e) => e.key === 'Enter' && addTask()}
+          className="w-full sm:flex-1 p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+          onKeyDown={(e) => e.key === 'Enter' && addTask()}
         />
-        
+
         <select
           value={priority}
           onChange={(e) => setPriority(e.target.value)}
-          className="p-3 rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="w-full sm:w-auto p-3 rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
         >
           <option value="low" className="bg-gray-800">Low</option>
           <option value="medium" className="bg-gray-800">Medium</option>
           <option value="high" className="bg-gray-800">High</option>
         </select>
-        
+
         <button
           onClick={addTask}
-          className="p-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transform hover:scale-110 transition-all duration-200"
+          className="w-full sm:w-auto p-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transform hover:scale-110 transition-all duration-200 flex justify-center items-center"
         >
           <PlusIcon className="w-5 h-5" />
         </button>
       </div>
 
+      {/* Task List */}
       <div ref={listRef} className="space-y-3 max-h-64 overflow-y-auto">
         {tasks.length === 0 ? (
           <p className="text-white/60 text-center py-8">No tasks yet. Add one above!</p>
@@ -125,15 +126,13 @@ const TodoList = ({ tasks = [], onUpdateTasks }) => {
               >
                 {task.completed && <CheckIcon className="w-4 h-4 text-white" />}
               </button>
-              
+
               <span
-                className={`flex-1 text-white ${
-                  task.completed ? 'line-through opacity-60' : ''
-                }`}
+                className={`flex-1 text-white ${task.completed ? 'line-through opacity-60' : ''}`}
               >
                 {task.title}
               </span>
-              
+
               <span className={`text-xs px-2 py-1 rounded-full ${
                 task.priority === 'high' ? 'bg-red-500/20 text-red-300' :
                 task.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-300' :
@@ -141,7 +140,7 @@ const TodoList = ({ tasks = [], onUpdateTasks }) => {
               }`}>
                 {task.priority}
               </span>
-              
+
               <button
                 onClick={() => deleteTask(task.id)}
                 className="p-1 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded transition-all duration-200"
