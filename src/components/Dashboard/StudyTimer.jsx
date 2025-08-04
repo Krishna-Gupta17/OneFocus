@@ -20,6 +20,8 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
   const timerRef = useRef(null);
   const floatAnimation = useRef(null);
   const { user } = useAuth();
+  // adding new usestate for timer issue
+  const [manualPause, setManualPause] = useState(false);
 
   useEffect(() => {
     // Load user settings
@@ -28,7 +30,7 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
     // Sci-fi animation for timer container
     // updation line for timer stop
     gsap.set(timerRef.current, { clearProps: 'all' , y:0});
-    
+
     gsap.fromTo(timerRef.current, 
       { scale: 0, opacity: 0, rotationY: 180 },
       { 
@@ -87,10 +89,23 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
 
   useEffect(() => {
     // Resume when focus comes back above threshold
-    if (!isActive && focusLevel >= userSettings.focusThreshold && sessionStartTime && sessionType === 'focus') {
+    if (!isActive && !manualPause && focusLevel >= userSettings.focusThreshold && sessionStartTime && sessionType === 'focus') {
       setTimeout(() => {
         setIsActive(true);
         onTimerStart?.();
+        setManualPause(false); // this line for timer by me
+
+        // for resolving timer autoplay
+//         const toggleTimer = () => {
+//   if (!isActive) {
+//     setManualPause(false); // user started manually
+    
+//   } else {
+//     setManualPause(true); // user paused manually
+    
+//   }
+// };
+        
         
         // Success animation
         gsap.to(timerRef.current, {
@@ -193,36 +208,76 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
       toast.success('Break over! Ready for another focus session.');
     }
   };
+// old toggle timer
+
+  // const toggleTimer = () => {
+  //   if (!isActive) {
+  //     // Starting timer
+  //     if (!sessionStartTime) {
+  //       setSessionStartTime(new Date());
+  //     }
+  //     setIsActive(true);
+  //     // adding timer issue resolve here
+  //     setIsActive(true);
+  //     setManualPause(false); 
+  //     onTimerStart?.();
+  //     toast.success(`${sessionType === 'focus' ? 'Focus' : 'Break'} session started!`);
+      
+  //     // Start animation
+  //     gsap.to(timerRef.current, {
+  //       boxShadow: '0 0 30px #8b5cf6, 0 0 60px #8b5cf6',
+  //       duration: 0.3
+  //     });
+  //   } else {
+  //     // Pausing timer
+  //     setIsActive(false);
+  //     setIsActive(true); // this line by timer
+  //     setManualPause(false); // this line by timer
+  //     setPausedTime(prev => prev + 1);
+  //     onTimerPause?.();
+  //     toast('Timer paused');
+      
+  //     // Pause animation
+  //     gsap.to(timerRef.current, {
+  //       boxShadow: '0 0 10px rgba(139, 92, 246, 0.3)',
+  //       duration: 0.3
+  //     });
+  //   }
+  // };
+
+  // new toggletimer
 
   const toggleTimer = () => {
-    if (!isActive) {
-      // Starting timer
-      if (!sessionStartTime) {
-        setSessionStartTime(new Date());
-      }
-      setIsActive(true);
-      onTimerStart?.();
-      toast.success(`${sessionType === 'focus' ? 'Focus' : 'Break'} session started!`);
-      
-      // Start animation
-      gsap.to(timerRef.current, {
-        boxShadow: '0 0 30px #8b5cf6, 0 0 60px #8b5cf6',
-        duration: 0.3
-      });
-    } else {
-      // Pausing timer
-      setIsActive(false);
-      setPausedTime(prev => prev + 1);
-      onTimerPause?.();
-      toast('Timer paused');
-      
-      // Pause animation
-      gsap.to(timerRef.current, {
-        boxShadow: '0 0 10px rgba(139, 92, 246, 0.3)',
-        duration: 0.3
-      });
+  if (!isActive) {
+    // Starting timer
+    if (!sessionStartTime) {
+      setSessionStartTime(new Date());
     }
-  };
+    setIsActive(true);
+    setManualPause(false); // user manually started
+    onTimerStart?.();
+    toast.success(`${sessionType === 'focus' ? 'Focus' : 'Break'} session started!`);
+
+    // Start animation
+    gsap.to(timerRef.current, {
+      boxShadow: '0 0 30px #8b5cf6, 0 0 60px #8b5cf6',
+      duration: 0.3
+    });
+  } else {
+    // Pausing timer
+    setIsActive(false); // ✅ stop timer
+    setManualPause(true); // ✅ mark manual pause
+    setPausedTime(prev => prev + 1);
+    onTimerPause?.();
+    toast('Timer paused');
+
+    // Pause animation
+    gsap.to(timerRef.current, {
+      boxShadow: '0 0 10px rgba(139, 92, 246, 0.3)',
+      duration: 0.3
+    });
+  }
+};
 
   const resetTimer = () => {
     // Save partial session if there was progress
@@ -434,9 +489,9 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
           
           {pausedTime > 0 && (
             <div className="text-center">
-              <span className="text-xs text-white/60 bg-white/10 px-2 py-1 rounded-full">
+              {/* <span className="text-xs text-white/60 bg-white/10 px-2 py-1 rounded-full">
                 Paused {pausedTime} time{pausedTime > 1 ? 's' : ''}
-              </span>
+              </span> */}
             </div>
           )}
         </div>
