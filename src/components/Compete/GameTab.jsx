@@ -9,26 +9,31 @@ import {
 } from '@heroicons/react/24/solid';
 import { Howl } from 'howler';
 
-const GameTab = ({ currentUser }) => {
+const GameTab = ({ currentUser, onlineUsers = [] }) => {
   const [roomId, setRoomId] = useState(null);
   const [roomData, setRoomData] = useState(null);
   const [allFriends, setAllFriends] = useState([]);
   const [filteredFriends, setFilteredFriends] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [hasJoined, setHasJoined] = useState(false);
+  const [matchEnded, setMatchEnded] = useState(false);
+  const [winnerUid, setWinnerUid] = useState(null);
+
   const pollingIntervalRef = useRef(null);
+  const friendRefreshRef = useRef(null);
 
   const joinSound = new Howl({
-    src: ['/sounds/join.mp3'], // Ensure this file exists in your public/sounds directory
+    src: ['/sounds/join.mp3'],
     volume: 0.5,
   });
 
   const fetchFriends = async () => {
     try {
       const res = await axios.get(`${import.meta.env.VITE_SERVER_URL}/compete/api/friends/${currentUser.uid}`);
-      const friends = res.data || [];
-      setAllFriends(friends);
-      setFilteredFriends(friends);
+      const friendsProfiles = res.data || [];
+      setAllFriends(friendsProfiles);
+      setFilteredFriends(friendsProfiles.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase())));
     } catch (err) {
       console.error('Error fetching friends:', err);
     }
@@ -41,7 +46,6 @@ const GameTab = ({ currentUser }) => {
         const prevCount = roomData?.participants?.length || 0;
         const newCount = res.data.participants.length;
         if (newCount > prevCount) joinSound.play();
-
         setRoomData(res.data);
       }
     } catch (err) {
@@ -69,7 +73,7 @@ const GameTab = ({ currentUser }) => {
 
   const inviteFriend = async (friendId) => {
     try {
-      await axios.post(`${import.meta.env.VITE_SERVER_URL}/compete/api/games/${roomId}/invite`, { friendId });
+      await axios.put(`${import.meta.env.VITE_SERVER_URL}/compete/api/games/${roomId}/invite`, { friendId });
       toast.success('Friend invited!');
       fetchRoomData(roomId);
     } catch (err) {
@@ -91,13 +95,31 @@ const GameTab = ({ currentUser }) => {
 
   const endMatch = async () => {
     try {
-      await axios.post(`${import.meta.env.VITE_SERVER_URL}/compete/api/games/${roomId}/end`);
-      toast.success('Match ended!');
+      await axios.post(`${import.meta.env.VITE_SERVER_URL}/compete/api/games/${roomId}/end`, {
+        uid: currentUser.uid,
+      });
+      toast.success('You ended the match');
+      setMatchEnded(true);
       setRoomId(null);
       setRoomData(null);
       clearInterval(pollingIntervalRef.current);
+      clearInterval(friendRefreshRef.current);
     } catch (err) {
       toast.error('Failed to end match');
+      console.error(err);
+    }
+  };
+
+  const joinRoom = async () => {
+    try {
+      await axios.put(`${import.meta.env.VITE_SERVER_URL}/compete/api/games/${roomId}/join`, {
+        uid: currentUser.uid,
+      });
+      toast.success('Joined the room');
+      fetchRoomData(roomId);
+      setHasJoined(true);
+    } catch (err) {
+      toast.error('Failed to join');
       console.error(err);
     }
   };
@@ -114,20 +136,37 @@ const GameTab = ({ currentUser }) => {
     return user?.name || 'Anonymous';
   };
 
+  const isOnline = (uid) => onlineUsers.includes(uid);
+
+  const getWinner = () => {
+    if (!roomData?.endTimes) return null;
+    const latest = Object.entries(roomData.endTimes).sort((a, b) => b[1] - a[1])[0];
+    return latest?.[0] || null;
+  };
+
   useEffect(() => {
-    if (currentUser?.uid) fetchFriends();
+    if (currentUser?.uid) {
+      fetchFriends();
+      friendRefreshRef.current = setInterval(fetchFriends, 30000);
+    }
+    return () => clearInterval(friendRefreshRef.current);
   }, [currentUser?.uid]);
 
   useEffect(() => {
     if (!roomId) return;
-
     fetchRoomData(roomId);
-    const interval = setInterval(() => fetchRoomData(roomId), 2000);
-    pollingIntervalRef.current = interval;
-
-    return () => clearInterval(interval);
+    pollingIntervalRef.current = setInterval(() => fetchRoomData(roomId), 2000);
+    return () => clearInterval(pollingIntervalRef.current);
   }, [roomId]);
 
+  useEffect(() => {
+    if (roomData?.status === 'ended') {
+      const winner = getWinner();
+      setWinnerUid(winner);
+    }
+  }, [roomData]);
+
+  const hasJoinedRoom = roomData?.participants?.includes(currentUser.uid);
   const shareLink = `${window.location.origin}/room/${roomId}`;
 
   return (
@@ -159,7 +198,7 @@ const GameTab = ({ currentUser }) => {
               value={shareLink}
               readOnly
               className="w-full p-2 bg-black/20 text-white rounded text-sm"
-              onClick={(e) => {
+              onClick={() => {
                 navigator.clipboard.writeText(shareLink);
                 toast.success('Link copied!');
               }}
@@ -170,12 +209,23 @@ const GameTab = ({ currentUser }) => {
             <h4 className="font-semibold mb-2">Participants:</h4>
             <ul className="text-white/80 text-sm space-y-1">
               {roomData?.participants?.map((uid) => (
-                <li key={uid}>• {getName(uid)}</li>
+                <li key={uid}>
+                  • {getName(uid)} {isOnline(uid) && <span className="text-green-400">(online)</span>}
+                </li>
               ))}
             </ul>
           </div>
 
-          {roomData?.status === 'waiting' && (
+          {!hasJoinedRoom && roomData?.status === 'waiting' && (
+            <button
+              onClick={joinRoom}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mt-4"
+            >
+              Join Room
+            </button>
+          )}
+
+          {roomData?.status === 'waiting' && hasJoinedRoom && (
             <>
               <div>
                 <h4 className="font-semibold mb-2">Invite Friends:</h4>
@@ -189,12 +239,22 @@ const GameTab = ({ currentUser }) => {
                   {filteredFriends
                     .filter(friend => !roomData.participants.includes(friend.uid))
                     .map(friend => (
-                      <div key={friend.uid} className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded shadow">
-                        <img
-                          src={friend.avatarUrl || '/default-avatar.png'}
-                          alt={friend.name}
-                          className="w-6 h-6 rounded-full object-cover"
-                        />
+                      <div
+                        key={friend.uid}
+                        className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded shadow"
+                      >
+                        <div className="relative">
+                          <img
+                            src={friend.avatarUrl || '/default-avatar.png'}
+                            alt={friend.name}
+                            className="w-6 h-6 rounded-full object-cover"
+                          />
+                          <span
+                            className={`absolute bottom-0 right-0 w-2 h-2 rounded-full ${
+                              isOnline(friend.uid) ? 'bg-green-400' : 'bg-gray-400'
+                            }`}
+                          />
+                        </div>
                         <span>{friend.name}</span>
                         <button
                           onClick={() => inviteFriend(friend.uid)}
@@ -219,7 +279,7 @@ const GameTab = ({ currentUser }) => {
             </>
           )}
 
-          {roomData?.status === 'in-progress' && (
+          {roomData?.status === 'in-progress' && hasJoinedRoom && (
             <button
               onClick={endMatch}
               className="mt-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded flex items-center gap-2"
@@ -227,6 +287,12 @@ const GameTab = ({ currentUser }) => {
               <StopIcon className="w-5 h-5" />
               End Match
             </button>
+          )}
+
+          {roomData?.status === 'ended' && winnerUid && (
+            <div className="mt-4 text-yellow-300 text-lg font-semibold">
+              🎉 Winner: {getName(winnerUid)}
+            </div>
           )}
         </div>
       )}

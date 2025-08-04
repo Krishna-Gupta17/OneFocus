@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { UserIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 
-
 const FriendsTab = ({ currentUser }) => {
   const [friends, setFriends] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -68,6 +67,25 @@ const FriendsTab = ({ currentUser }) => {
     }
   };
 
+  const rejectRequest = async (fromUid) => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/compete/api/users/${currentUser.uid}/reject-friend-request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fromUid })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) return toast.error(data.message || 'Error');
+      toast.success(data.message || 'Request rejected!');
+      fetchUserData();
+    } catch (err) {
+      console.error(err);
+      toast.error('Error rejecting request');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -102,10 +120,12 @@ const FriendsTab = ({ currentUser }) => {
               >
                 <CheckIcon className="w-5 h-5" />
               </button>
-              {/* Optionally, add a reject button by extending backend */}
-              {/* <button onClick={() => rejectRequest(req.from)} className="text-red-500">
+              <button
+                onClick={() => rejectRequest(req.from)}
+                className="text-red-500 hover:scale-110 transition"
+              >
                 <XMarkIcon className="w-5 h-5" />
-              </button> */}
+              </button>
             </div>
           </div>
         ))}
