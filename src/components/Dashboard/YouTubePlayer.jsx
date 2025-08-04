@@ -49,18 +49,28 @@ const YouTubePlayer = () => {
     return (match && match[2].length === 11) ? match[2] : null;
   };
 
+  // const getVideoTitle = async (videoId) => {
+  //   const titles = [
+      
+  //   ];
+  //   return titles[Math.floor(Math.random() * titles.length)];
+  // };
+
   const getVideoTitle = async (videoId) => {
-    const titles = [
-      'Advanced Calculus Tutorial',
-      'Physics Concepts Explained',
-      'Chemistry Lab Techniques',
-      'Biology Study Guide',
-      'Mathematics Problem Solving',
-      'Science Documentary',
-      'Educational Content'
-    ];
-    return titles[Math.floor(Math.random() * titles.length)];
-  };
+  try {
+    const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+    if (response.ok) {
+      const data = await response.json();
+      return data.title;
+    }
+  } catch (error) {
+    console.error('Failed to fetch video title:', error);
+  }
+
+  // fallback if fetch fails
+  return 'Untitled Video';
+};
+
 
   const saveVideoToGallery = async (videoData) => {
     if (!user) return;
@@ -71,11 +81,25 @@ const YouTubePlayer = () => {
         body: JSON.stringify(videoData),
       });
 
+      // if (response.ok) {
+      //   const updatedGallery = await response.json();
+      //   setVideoGallery(updatedGallery);
+      //   toast.success('Video added to gallery!');
+      // }
+
       if (response.ok) {
-        const updatedGallery = await response.json();
-        setVideoGallery(updatedGallery);
-        toast.success('Video added to gallery!');
-      }
+      const updatedGallery = await response.json();
+
+      // ✅ Filter out duplicates by video ID before setting state
+      const uniqueGallery = updatedGallery.filter(
+        (v, i, self) => i === self.findIndex((x) => x.id === v.id)
+      );
+
+      setVideoGallery(uniqueGallery);
+      toast.success('Video added to gallery!');
+    } else {
+      toast.error('Failed to save video.');
+    }
     } catch (error) {
       console.error('Error saving video:', error);
       toast.error('Failed to save video');
