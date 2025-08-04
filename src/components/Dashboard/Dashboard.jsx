@@ -28,14 +28,14 @@ const Dashboard = ({ user }) => {
     );
     
     // Floating animation for cards
-    gsap.to('.dashboard-card', {
-      y: -5,
-      duration: 3,
-      yoyo: true,
-      repeat: -1,
-      ease: 'sine.inOut',
-      stagger: 0.5
-    });
+    // gsap.to('.dashboard-card', {
+    //   y: -5,
+    //   duration: 3,
+    //   yoyo: true,
+    //   repeat: -1,
+    //   ease: 'sine.inOut',
+    //   stagger: 0.5
+    // });
     
     // Particle effect animation
     gsap.to('.particle', {
