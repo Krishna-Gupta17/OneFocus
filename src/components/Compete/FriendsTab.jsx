@@ -69,7 +69,7 @@ const FriendsTab = ({ currentUser }) => {
 
   const rejectRequest = async (fromUid) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/compete/api/users/${currentUser.uid}/reject-friend-request`, {
+      const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/users/${currentUser.uid}/reject-friend-request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fromUid })
