@@ -22,14 +22,16 @@ body,
   }
 }
 
+/* for removing float effect */
+
 @keyframes float {
   0%, 100% {
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(-10px);
+    transform: translateY(0px);
   }
-}
+} 
 
 @keyframes glow {
   0%, 100% {
@@ -44,9 +46,11 @@ body,
   animation: fadeIn 0.5s ease-out;
 }
 
-.animate-float {
+/* for removing float effect */
+
+/* .animate-float {
   animation: float 3s ease-in-out infinite;
-}
+} */
 
 .animate-glow {
   animation: glow 2s ease-in-out infinite;

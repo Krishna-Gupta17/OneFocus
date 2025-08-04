@@ -26,6 +26,9 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
     loadUserSettings();
     
     // Sci-fi animation for timer container
+    // updation line for timer stop
+    gsap.set(timerRef.current, { clearProps: 'all' , y:0});
+    
     gsap.fromTo(timerRef.current, 
       { scale: 0, opacity: 0, rotationY: 180 },
       { 
@@ -34,22 +37,22 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
         rotationY: 0,
         duration: 1.2, 
         ease: "back.out(1.7)",
-        onComplete: () => {
-          // Add controlled floating animation
-          floatAnimation.current = gsap.to(timerRef.current, {
-            y: -3,
-            duration: 3,
-            repeat: -1,
-            yoyo: true,
-            ease: "sine.inOut"
-          });
-        }
+        // onComplete: () => {
+        //   // Add controlled floating animation
+        //   // floatAnimation.current = gsap.to(timerRef.current, {
+        //   //   y: -3,
+        //   //   duration: 3,
+        //   //   repeat: -1,
+        //   //   yoyo: true,
+        //   //   ease: "sine.inOut"
+        //   // });
+        // }
       }
     );
 
-    return () => {
-      if (floatAnimation.current) floatAnimation.current.kill();
-    };
+    // return () => {
+    //   if (floatAnimation.current) floatAnimation.current.kill();
+    // };
   }, []);
 
   useEffect(() => {
@@ -277,17 +280,20 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
   return (
     <div 
       ref={timerRef} 
+      // addition of just below line for timer stop.
+      style={{ transform: 'translateY(0px)' }}
       className="backdrop-blur-lg bg-white/10 p-6 rounded-2xl border border-white/20 relative overflow-hidden"
-      onMouseEnter={() => {
-        if (floatAnimation.current) floatAnimation.current.pause();
-        gsap.to(timerRef.current, { y: 0, duration: 0.3 });
-      }}
-      onMouseLeave={() => {
-        if (floatAnimation.current) floatAnimation.current.play();
-      }}
+      // Doing it for removing timer hover effect.
+      // onMouseEnter={() => {
+      //   if (floatAnimation.current) floatAnimation.current.pause();
+      //   gsap.to(timerRef.current, { y: 0, duration: 0.3 });
+      // }}
+      // onMouseLeave={() => {
+      //   if (floatAnimation.current) floatAnimation.current.play();
+      // }}
     >
       {/* Sci-fi background effects */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-blue-500/10 to-cyan-500/10 animate-pulse"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-blue-500/10 to-cyan-500/10 "></div>
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500"></div>
       
       <div className="relative z-10">
