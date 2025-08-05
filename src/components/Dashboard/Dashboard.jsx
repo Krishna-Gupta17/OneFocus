@@ -203,7 +203,59 @@ const Dashboard = ({ user }) => {
       
       
       {/* Completion celebration element */}
-    
+
+    {/* Footer */}
+<footer className="mt-16 pt-10 border-t border-white/10 relative z-10 text-white/70 text-sm">
+  <div className="max-w-4xl mx-auto flex flex-col items-center text-center gap-4 px-4">
+    {/* Brand Info */}
+    <div>
+      <p className="text-white font-semibold text-lg">StudySync © {new Date().getFullYear()}</p>
+      <p className="text-white/60">Built to boost your productivity and focus ✨</p>
+    </div>
+
+    {/* Social Icons */}
+    <div className="flex items-center gap-6 mt-2">
+      {/* Instagram */}
+      <a
+        href="https://instagram.com/your_handle"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="currentColor"
+          viewBox="0 0 24 24"
+          className="w-6 h-6 text-white transition-all duration-300 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-tr group-hover:from-pink-500 group-hover:via-red-400 group-hover:to-yellow-400"
+        >
+          <path d="M7.75 2A5.75 5.75 0 0 0 2 7.75v8.5A5.75 5.75 0 0 0 7.75 22h8.5A5.75 5.75 0 0 0 22 16.25v-8.5A5.75 5.75 0 0 0 16.25 2h-8.5zm0 1.5h8.5A4.25 4.25 0 0 1 20.5 7.75v8.5A4.25 4.25 0 0 1 16.25 20.5h-8.5A4.25 4.25 0 0 1 3.5 16.25v-8.5A4.25 4.25 0 0 1 7.75 3.5zM12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 1.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7zm5.75-.25a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z" />
+        </svg>
+      </a>
+
+      {/* LinkedIn */}
+      <a
+        href="https://linkedin.com/in/your_handle"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hover:text-blue-400 transition-colors duration-200"
+      >
+        <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+          <path d="M19 0h-14c-2.8 0-5 2.2-5 5v14c0 2.7 2.2 5 5 5h14c2.7 0 5-2.3 5-5v-14c0-2.8-2.3-5-5-5zm-11 19h-3v-9h3v9zm-1.5-10.3c-1 0-1.8-.8-1.8-1.7s.8-1.7 1.8-1.7 1.7.8 1.7 1.7-.8 1.7-1.7 1.7zm13.5 10.3h-3v-4.7c0-1.1-.4-1.9-1.4-1.9s-1.6.9-1.6 1.9v4.7h-3v-9h2.8v1.2h.1c.4-.8 1.3-1.4 2.5-1.4 2 0 3.6 1.3 3.6 4.1v5.1z"/>
+        </svg>
+      </a>
+
+      {/* Feedback */}
+      <a
+        href="mailto:feedback@studysync.app"
+        className="hover:text-yellow-400 transition-colors duration-200"
+      >
+        Feedback
+      </a>
+    </div>
+  </div>
+</footer>
+
+
     </div>
   );
 };
