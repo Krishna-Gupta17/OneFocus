@@ -202,7 +202,8 @@ const YouTubePlayer = () => {
           <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-video mb-4">
             <iframe
               ref={iframeRef}
-              src={`https://www.youtube.com/embed/${currentVideo.id}?modestbranding=1&rel=0&showinfo=0&controls=1&autoplay=${isPlaying ? 1 : 0}&mute=${isMuted ? 1 : 0}`}
+               src={`https://www.youtube.com/embed/${currentVideo.id}?modestbranding=1&rel=0&showinfo=0&controls=1&autoplay=${isPlaying ? 1 : 0}&mute=${isMuted ? 1 : 0}`}
+              
               className="w-full h-full"
               frameBorder="0"
               allowFullScreen
