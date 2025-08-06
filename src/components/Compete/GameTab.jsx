@@ -1,15 +1,11 @@
-              import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import {
-  PlayIcon,
-  StopIcon,
-  UserGroupIcon,
-  PlusIcon,
-} from '@heroicons/react/24/solid';
+import { PlayIcon, StopIcon, UserGroupIcon, PlusIcon } from '@heroicons/react/24/solid';
 import { useParams } from 'react-router-dom';
 import FocusTracker from './FocusTracker';
+import { gsap } from 'gsap';
 
 const socket = io(import.meta.env.VITE_SERVER_URL);
 
@@ -30,6 +26,15 @@ const GameTab = ({ currentUser }) => {
   const timerRef = useRef(null);
   const alreadyDeclaredRef = useRef(false);
   const { roomId: urlRoomId } = useParams();
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    gsap.fromTo(
+      containerRef.current,
+      { opacity: 0, y: 40 },
+      { opacity: 1, y: 0, duration: 1.2, ease: 'power3.out' }
+    );
+  }, []);
 
   useEffect(() => {
     if (urlRoomId && !roomId) setRoomId(urlRoomId);
@@ -47,9 +52,7 @@ const GameTab = ({ currentUser }) => {
 
   useEffect(() => {
     if (!currentUser?.uid) return;
-
     const inviteEvent = `invite-${currentUser.uid}`;
-
     socket.on('roomUpdate', setParticipants);
     socket.on('onlineUsersUpdate', setOnlineUsers);
     socket.on(inviteEvent, ({ roomId }) => {
@@ -66,25 +69,14 @@ const GameTab = ({ currentUser }) => {
     socket.on('winnerAnnounced', ({ winnerUid, winnerName }) => {
       if (winnerUid && winnerName) {
         setWinner({ uid: winnerUid, name: winnerName });
-        toast.success(`${winnerUid === currentUser.uid ? 'You' : winnerName} won the game!`);
+        toast.success(`${winnerUid === currentUser.uid ? 'You' : winnerName} won!`);
       } else {
         toast.error('Winner info missing');
       }
       setIsRunning(false);
     });
-    socket.on('matchHistory', (history) => {
-      console.log('📜 Match History:', history);
-    });
     socket.emit('getMatchHistory', { roomId });
-
-    return () => {
-      socket.off('roomUpdate');
-      socket.off('onlineUsersUpdate');
-      socket.off(inviteEvent);
-      socket.off('gameStarted');
-      socket.off('winnerAnnounced');
-      socket.off('matchHistory');
-    };
+    return () => socket.removeAllListeners();
   }, [currentUser?.uid, roomId]);
 
   const fetchFriends = async () => {
@@ -110,23 +102,12 @@ const GameTab = ({ currentUser }) => {
     );
   }, [searchQuery, friends]);
 
-  const inviteFriend = (friendId) => {
-    socket.emit('inviteFriend', { roomId, friendId });
-    toast.success('Friend invited');
-  };
-
   useEffect(() => {
     if (isRunning && focusLevel >= 0.8 && !winner && currentUser?.uid) {
       timerRef.current = setInterval(() => {
         setTimer((prev) => {
           const next = prev + 1;
-
-          socket.emit('progressUpdate', {
-            roomId,
-            uid: currentUser.uid,
-            time: next,
-          });
-
+          socket.emit('progressUpdate', { roomId, uid: currentUser.uid, time: next });
           if (next >= targetTime && !alreadyDeclaredRef.current) {
             alreadyDeclaredRef.current = true;
             socket.emit('declareWinner', {
@@ -134,165 +115,164 @@ const GameTab = ({ currentUser }) => {
               winnerUid: currentUser.uid,
               winnerName: currentUser.displayName || currentUser.email,
             });
-            setWinner({
-              uid: currentUser.uid,
-              name: currentUser.displayName || currentUser.email,
-            });
+            setWinner({ uid: currentUser.uid, name: currentUser.displayName || currentUser.email });
             setIsRunning(false);
             clearInterval(timerRef.current);
           }
-
           return next;
         });
       }, 1000);
     }
-
     return () => clearInterval(timerRef.current);
   }, [isRunning, focusLevel, winner, targetTime, currentUser?.uid]);
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-  };
+  const formatTime = (sec) => `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+
+  const inviteFriend = (uid) => socket.emit('sendInvite', { from: currentUser.uid, to: uid, roomId });
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold text-white mb-6">🎮 Study Game</h2>
-      <FocusTracker onFocusChange={setFocusLevel} />
+    <div ref={containerRef} className="min-h-screen text-gray-200 p-4 sm:p-6">
+      <div className="max-w-6xl mx-auto space-y-10">
+        <div className="space-y-4 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold">⚔️
+ Compete With Friends</h2>
+          
+        </div>
 
-      {roomId ? (
-        <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
-          <div>
-            <p className="text-gray-600 text-sm">Room ID:</p>
-            <p className="text-lg font-semibold text-gray-800">{roomId}</p>
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="bg-indigo-950 rounded-xl p-4 sm:p-6 space-y-6">
+            <div className="space-y-4 text-center">
+  <h2 className="text-lg sm:text-xl font-semibold text-cyan-300 mb-4">🎯 Study Game Room</h2>
+  <p className="text-indigo-300 max-w-2xl mx-auto leading-relaxed text-base sm:text-lg">
+    Step into a focus-powered challenge with your friends! 🎮 
+    <br /><br />
+    ⏱️ The goal: Stay concentrated for the full session duration.
+    <br />
+    🧠 Our AI Focus Tracker ensures fair play by monitoring your presence.
+    <br /><br />
+    💡 Outlast your peers, maintain your focus, and claim victory!
+  </p>
+</div>
+            {roomId ? (
+              <>
+                <div>
+                  <div className="text-sm text-indigo-300">Room ID:</div>
+                  <div className="text-xl sm:text-2xl font-semibold text-yellow-300 break-all">{roomId}</div>
+                </div>
 
-          <div>
-            <h3 className="text-gray-700 font-semibold mb-2">Participants:</h3>
-            <ul className="list-disc list-inside text-sm text-gray-800">
-              {participants.map((uid) => (
-                <li key={uid}>{uid}</li>
-              ))}
-            </ul>
-          </div>
+                <div>
+                  <div className="text-lg text-cyan-300 font-semibold mb-2">Participants</div>
+                  <ul className="list-disc list-inside text-gray-100 space-y-1">
+                    {participants.map((uid) => <li key={uid}>{uid}</li>)}
+                  </ul>
+                </div>
 
-          {participants.length > 0 && currentUser?.uid === participants[0] && !isRunning && (
-            <div className="mb-4">
-              <label className="text-sm text-gray-600">Set Target Time (minutes):</label>
-              <input
-                type="number"
-                value={targetTime / 60}
-                onChange={(e) => setTargetTime(Number(e.target.value) * 60)}
-                className="w-20 p-1 border border-gray-300 rounded ml-2"
-              />
+                {participants[0] === currentUser?.uid && !isRunning && (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="text-indigo-200">Target time (min):</label>
+                    <input
+                      type="number"
+                      value={targetTime / 60}
+                      onChange={(e) => setTargetTime(Number(e.target.value) * 60)}
+                      className="w-20 p-1 rounded border border-indigo-400 text-black"
+                    />
+                    <button
+                      onClick={() => socket.emit('startGame', { roomId, targetTime })}
+                      className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg text-white font-medium"
+                    >Start Game</button>
+                  </div>
+                )}
+
+                <div>
+                  <div className="text-lg text-cyan-300 font-semibold mb-1">Timer</div>
+                  <div className="flex flex-wrap items-center gap-4">
+                    <span className="text-2xl sm:text-3xl font-mono text-yellow-400">{formatTime(timer)}</span>
+                    <button
+                      onClick={() => setIsRunning((prev) => !prev)}
+                      className={`p-3 rounded-full transition ${isRunning ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
+                    >
+                      {isRunning ? <StopIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" /> : <PlayIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />}
+                    </button>
+                  </div>
+                  <div className="text-sm text-indigo-200 mt-1">Focus Level: <strong>{focusLevel.toFixed(2)}</strong></div>
+                  {winner && (
+                    <div className="mt-3 text-green-300 font-bold text-lg">
+                      🎉 Winner: {winner.uid === currentUser.uid ? 'You!' : winner.name}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <div className="text-lg text-cyan-300 font-semibold mb-2">Invite Online Friends</div>
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full p-2 rounded border border-indigo-400 bg-indigo-900 text-gray-200 mb-3"
+                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {filteredFriends.filter(f => onlineUsers.includes(f.uid)).map(f => (
+                      <button
+                        key={f.uid}
+                        onClick={() => inviteFriend(f.uid)}
+                        className="flex items-center gap-2 px-3 py-2 bg-cyan-600 hover:bg-cyan-700 rounded-lg text-white transition"
+                      >
+                        <UserGroupIcon className="w-5 h-5" />
+                        <span>{f.displayName || f.email}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              
               <button
-                onClick={() => socket.emit('startGame', { roomId, targetTime })}
-                className="ml-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                onClick={async () => {
+                  try {
+                    const res = await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/games/create`, { hostUid: currentUser.uid });
+                    setRoomId(res.data.roomId);
+                    toast.success('Room created');
+                  } catch {
+                    toast.error('Failed to create room');
+                  }
+                }}
+                className="mx-auto flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white text-lg px-6 py-3 rounded-full shadow-lg"
               >
-                Start Game
+                <PlusIcon className="w-6 h-6" /> Create Room
               </button>
-            </div>
-          )}
-
-          <div>
-            <h3 className="text-gray-700 font-semibold mb-2">Timer:</h3>
-            <div className="flex items-center gap-4">
-              <span className="text-3xl font-mono text-blue-600">{formatTime(timer)}</span>
-              <button
-                onClick={() => setIsRunning((prev) => !prev)}
-                className={`px-4 py-2 rounded-lg text-white transition ${
-                  isRunning ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
-                }`}
-              >
-                {isRunning ? <StopIcon className="w-5 h-5" /> : <PlayIcon className="w-5 h-5" />}
-              </button>
-            </div>
-            <p className="text-sm text-gray-500 mt-2">
-              Focus Level: <strong>{focusLevel.toFixed(2)}</strong>
-            </p>
-            {winner && (
-              <div className="mt-2 text-green-600 font-bold">
-                🎉 Winner: {winner.uid === currentUser.uid ? 'You!' : winner.name}
-              </div>
             )}
           </div>
 
-          <div>
-            <h3 className="text-gray-700 font-semibold mb-2">Invite Online Friends:</h3>
-            <input
-              type="text"
-              placeholder="Search friends..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded mb-3"
-            />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {filteredFriends
-                .filter((f) => onlineUsers.includes(f.uid))
-                .map((f) => (
-                  <button
-                    key={f.uid}
-                    onClick={() => inviteFriend(f.uid)}
-                    className="flex items-center gap-2 bg-blue-100 hover:bg-blue-200 px-3 py-2 rounded-lg transition"
-                  >
-                    <UserGroupIcon className="w-5 h-5 text-blue-600" />
-                    <span className="text-gray-800 text-sm">
-                      {f.displayName || f.email}
-                    </span>
-                  </button>
-                ))}
-            </div>
+          <div className="bg-indigo-950 rounded-xl p-4 sm:p-6">
+            <h3 className="text-lg sm:text-xl font-semibold text-cyan-300 mb-4">🧠 AI Focus Tracker</h3>
+            <FocusTracker onFocusChange={setFocusLevel} />
           </div>
         </div>
-      ) : (
-        <button
-          className="flex items-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-xl shadow hover:bg-blue-700 transition"
-          onClick={async () => {
-            try {
-              const res = await axios.post(
-                `${import.meta.env.VITE_SERVER_URL}/api/games/create`,
-                { hostUid: currentUser.uid }
-              );
-              setRoomId(res.data.roomId);
-              toast.success('Room created');
-            } catch {
-              toast.error('Failed to create room');
-            }
-          }}
-        >
-          <PlusIcon className="w-5 h-5" /> Create Room
-        </button>
-      )}
 
-      {/* Invite Modal */}
-      {incomingInvite && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-xl text-center space-y-4 max-w-sm">
-            <h3 className="text-lg font-bold">You've been invited!</h3>
-            <p className="text-gray-700">
-              Join room <strong>{incomingInvite}</strong>?
-            </p>
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={() => {
-                  setRoomId(incomingInvite);
-                  setIncomingInvite(null);
-                }}
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg"
-              >
-                Accept
-              </button>
-              <button
-                onClick={() => setIncomingInvite(null)}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg"
-              >
-                Decline
-              </button>
+        {incomingInvite && (
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+            <div className="bg-indigo-900 text-gray-200 p-6 rounded-xl shadow-2xl w-80 text-center space-y-4">
+              <h3 className="text-2xl font-bold">Invitation Received</h3>
+              <p className="text-lg">Join room <span className="font-semibold text-yellow-300">{incomingInvite}</span>?</p>
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={() => { setRoomId(incomingInvite); setIncomingInvite(null); }}
+                  className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg text-white"
+                >
+                  Accept
+                </button>
+                <button
+                  onClick={() => setIncomingInvite(null)}
+                  className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg text-white"
+                >
+                  Decline
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

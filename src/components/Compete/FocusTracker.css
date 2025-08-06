@@ -1,0 +1,8 @@
+.tracker-camera-wrap {
+  perspective: 1000px;
+}
+
+.tracker-container {
+  transform-style: preserve-3d;
+  transition: transform 1s ease;
+}

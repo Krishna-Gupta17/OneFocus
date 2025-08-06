@@ -1,21 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CameraIcon } from '@heroicons/react/24/outline';
 import { gsap } from 'gsap';
-import toast from 'react-hot-toast';
 import { FaceMesh } from '@mediapipe/face_mesh';
 import { Camera } from '@mediapipe/camera_utils';
-
-const ALERT_SOUND_URL = ' '; // Add your alert sound URL if needed
 
 const FocusTracker = ({ onFocusChange }) => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const [focusLevel, setFocusLevel] = useState(1);
+  const ringRef = useRef(null);
+  const [focusLevel, setFocusLevel] = useState(0);
+  const [isTracking, setIsTracking] = useState(true);
 
   useEffect(() => {
+    gsap.fromTo(
+      ringRef.current,
+      { scale: 0, opacity: 0 },
+      { scale: 1, opacity: 1, duration: 0.6, ease: 'back.out(1.7)' }
+    );
+
     const faceMesh = new FaceMesh({
-      locateFile: (file) =>
-        `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
     });
 
     faceMesh.setOptions({
@@ -28,14 +31,13 @@ const FocusTracker = ({ onFocusChange }) => {
     faceMesh.onResults(handleResults);
 
     let camera;
-
     if (videoRef.current) {
       camera = new Camera(videoRef.current, {
         onFrame: async () => {
           await faceMesh.send({ image: videoRef.current });
         },
-        width: 300,
-        height: 200,
+        width: 320,
+        height: 240,
       });
       camera.start();
     }
@@ -46,64 +48,71 @@ const FocusTracker = ({ onFocusChange }) => {
   }, []);
 
   const handleResults = (results) => {
-    if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
-      setFocusLevel(0);
-      onFocusChange(0);
-      return;
-    }
-
-    const landmarks = results.multiFaceLandmarks[0];
-
-    // Estimate focus based on eye openness and head position
-    const leftEyeTop = landmarks[159];
-    const leftEyeBottom = landmarks[145];
-    const rightEyeTop = landmarks[386];
-    const rightEyeBottom = landmarks[374];
-
-    const leftEyeOpen = Math.abs(leftEyeTop.y - leftEyeBottom.y);
-    const rightEyeOpen = Math.abs(rightEyeTop.y - rightEyeBottom.y);
-
-    const avgEyeOpen = (leftEyeOpen + rightEyeOpen) / 2;
-
-    // Heuristic: if eyes are open enough, assume focused
-    const threshold = 0.015; // tweak this value for sensitivity
-    const level = avgEyeOpen > threshold ? 1 : 0.3;
+    const faceDetected = results?.multiFaceLandmarks?.length > 0;
+    const level = faceDetected ? 1 : 0;
 
     setFocusLevel(level);
-    onFocusChange(level);
+    onFocusChange?.(level);
 
-    // Optional: play alert sound if unfocused
-    if (level < 0.5 && ALERT_SOUND_URL.trim()) {
-      const audio = new Audio(ALERT_SOUND_URL);
-      audio.play();
-    }
-
-    // Optional: animate canvas with GSAP
     if (canvasRef.current) {
       const ctx = canvasRef.current.getContext('2d');
-      canvasRef.current.width = 300;
-      canvasRef.current.height = 200;
-      ctx.clearRect(0, 0, 300, 200);
-      ctx.strokeStyle = 'lime';
-      ctx.lineWidth = 1;
+      canvasRef.current.width = 320;
+      canvasRef.current.height = 240;
+      ctx.clearRect(0, 0, 320, 240);
 
-      for (let point of landmarks) {
-        ctx.beginPath();
-        ctx.arc(point.x * 300, point.y * 200, 1, 0, 2 * Math.PI);
-        ctx.stroke();
+      if (faceDetected) {
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 1;
+        for (let point of results.multiFaceLandmarks[0]) {
+          ctx.beginPath();
+          ctx.arc(point.x * 320, point.y * 240, 1, 0, 2 * Math.PI);
+          ctx.stroke();
+        }
       }
 
-      gsap.to(canvasRef.current, { opacity: level, duration: 0.5 });
+      gsap.to(canvasRef.current, { opacity: faceDetected ? 1 : 0.2, duration: 0.5 });
     }
   };
 
+  const getFocusGradient = (score) => {
+    return score >= 1 ? 'from-green-500 to-emerald-500' : 'from-red-500 to-pink-500';
+  };
+
+  const getFocusMessage = (score) => {
+    return score >= 1 ? 'Face Detected 🎯' : 'No Face 😴';
+  };
+
   return (
-    <div className="relative w-[300px] h-[200px]">
-      <video ref={videoRef} className="absolute top-0 left-0 w-full h-full" autoPlay muted playsInline />
-      <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full pointer-events-none" />
-      <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
-        <CameraIcon className="w-4 h-4" />
-        Focus: {focusLevel.toFixed(2)}
+    <div className="backdrop-blur-lg bg-white/10 p-4 sm:p-6 rounded-2xl border border-white/20 w-full max-w-[320px] mx-auto">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg sm:text-xl font-bold text-white">AI Focus Tracker</h3>
+        <div className={`flex items-center gap-2 ${isTracking ? 'text-green-400' : 'text-gray-400'}`}>
+          <div className={`w-2 h-2 rounded-full ${isTracking ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`} />
+          <span className="text-sm">{isTracking ? 'Active' : 'Inactive'}</span>
+        </div>
+      </div>
+
+      <div className="text-center mb-6">
+        <div
+          ref={ringRef}
+          className="relative w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-4 rounded-full border-4 border-purple-400 overflow-hidden"
+        >
+          <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover absolute" />
+          <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full pointer-events-none" />
+        </div>
+
+        <p className="text-white/80 text-sm mb-2">{getFocusMessage(focusLevel)}</p>
+        <div className="w-full bg-white/10 rounded-full h-3 mb-2">
+          <div
+            className={`h-3 rounded-full bg-gradient-to-r ${getFocusGradient(focusLevel)} transition-all duration-1000`}
+            style={{ width: `${focusLevel * 100}%` }}
+          ></div>
+        </div>
+      </div>
+
+      <div className="text-xs text-white/60 text-center space-y-1">
+        <p>AI detects face presence using MediaPipe</p>
+        <p>Focus drops when no face is visible</p>
       </div>
     </div>
   );
