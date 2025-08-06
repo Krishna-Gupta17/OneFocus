@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import { UserIcon } from '@heroicons/react/24/outline';
 import {
   HomeIcon,
   ChartBarIcon,
@@ -18,7 +19,7 @@ const Navbar = ({ activeTab, setActiveTab }) => {
     { id: 'dashboard', name: 'Dashboard', icon: HomeIcon },
     { id: 'analytics', name: 'Analytics', icon: ChartBarIcon },
     { id: 'compete', name: 'Compete', icon: UserGroupIcon },
-    { id: 'settings', name: 'Settings', icon: CogIcon },
+    { id: 'settings', name: 'Profile', icon: UserIcon },
   ];
 
   return (
