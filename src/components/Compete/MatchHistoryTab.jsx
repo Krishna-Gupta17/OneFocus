@@ -1,14 +1,5 @@
-// src/components/Compete/MatchHistoryTab.jsx
 import React, { useEffect, useState } from 'react';
-import { db } from '../../firebase/config';
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  doc,
-  getDoc
-} from 'firebase/firestore';
+import axios from 'axios';
 import { ClockIcon, TrophyIcon } from '@heroicons/react/24/solid';
 
 const MatchHistoryTab = ({ currentUser }) => {
@@ -18,37 +9,20 @@ const MatchHistoryTab = ({ currentUser }) => {
     const fetchMatches = async () => {
       if (!currentUser?.uid) return;
 
-      const q = query(
-        collection(db, 'matches'),
-        where('participants', 'array-contains', currentUser.uid)
-      );
+      try {
+        const baseUrl = import.meta.env.VITE_SERVER_URL;
+        const endpoint = `${baseUrl}/api/users/${currentUser.uid}/match-history`;
+        const response = await axios.get(endpoint);
 
-      const snap = await getDocs(q);
-      const matchList = await Promise.all(
-        snap.docs.map(async docSnap => {
-          const data = docSnap.data();
-          const userDetails = await Promise.all(
-            data.participants.map(uid => getDoc(doc(db, 'users', uid)))
-          );
+        const matchList = response.data.map(match => ({
+          ...match,
+          createdAt: new Date(match.createdAt) // Convert ISO string to Date object
+        }));
 
-          const names = userDetails.map(d => d.exists() ? d.data().name : 'Unknown');
-          const durationList = data.participants.map(uid => ({
-            uid,
-            name: userDetails.find(d => d.id === uid)?.data()?.name || 'Unknown',
-            time: data.durations?.[uid] || 0
-          }));
-
-          return {
-            id: docSnap.id,
-            createdAt: data.createdAt?.toDate(),
-            winner: userDetails.find(d => d.id === data.winner)?.data()?.name || 'Unknown',
-            players: durationList
-          };
-        })
-      );
-
-      const sorted = matchList.sort((a, b) => b.createdAt - a.createdAt);
-      setMatches(sorted);
+        setMatches(matchList);
+      } catch (error) {
+        console.error("Failed to fetch match history:", error);
+      }
     };
 
     fetchMatches();
