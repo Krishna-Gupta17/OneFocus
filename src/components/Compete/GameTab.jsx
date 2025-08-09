@@ -28,6 +28,7 @@ const GameTab = ({ currentUser }) => {
   const { roomId: urlRoomId } = useParams();
   const containerRef = useRef(null);
 
+  // GSAP animation for UI
   useEffect(() => {
     gsap.fromTo(
       containerRef.current,
@@ -36,10 +37,12 @@ const GameTab = ({ currentUser }) => {
     );
   }, []);
 
+  // Get roomId from URL params
   useEffect(() => {
     if (urlRoomId && !roomId) setRoomId(urlRoomId);
   }, [urlRoomId]);
 
+  // Join room & fetch participants
   useEffect(() => {
     if (roomId && currentUser?.uid) {
       socket.emit('joinRoom', { roomId, uid: currentUser.uid });
@@ -50,9 +53,11 @@ const GameTab = ({ currentUser }) => {
     }
   }, [roomId, currentUser?.uid]);
 
+  // Socket event handling with cleanup
   useEffect(() => {
     if (!currentUser?.uid) return;
     const inviteEvent = `invite-${currentUser.uid}`;
+
     socket.on('roomUpdate', setParticipants);
     socket.on('onlineUsersUpdate', setOnlineUsers);
     socket.on(inviteEvent, ({ roomId }) => {
@@ -69,16 +74,29 @@ const GameTab = ({ currentUser }) => {
     socket.on('winnerAnnounced', ({ winnerUid, winnerName }) => {
       if (winnerUid && winnerName) {
         setWinner({ uid: winnerUid, name: winnerName });
-        toast.success(`${winnerUid === currentUser.uid ? 'You' : winnerName} won!`);
+        toast.success(`${winnerUid === currentUser.uid ? 'You' : winnerName} won the game!`);
       } else {
         toast.error('Winner info missing');
       }
       setIsRunning(false);
     });
+    socket.on('matchHistory', (history) => {
+      console.log('📜 Match History:', history);
+    });
+
     socket.emit('getMatchHistory', { roomId });
-    return () => socket.removeAllListeners();
+
+    return () => {
+      socket.off('roomUpdate');
+      socket.off('onlineUsersUpdate');
+      socket.off(inviteEvent);
+      socket.off('gameStarted');
+      socket.off('winnerAnnounced');
+      socket.off('matchHistory');
+    };
   }, [currentUser?.uid, roomId]);
 
+  // Fetch friends list
   const fetchFriends = async () => {
     try {
       const res = await axios.get(`${import.meta.env.VITE_SERVER_URL}/api/users/${currentUser.uid}`);
@@ -94,6 +112,7 @@ const GameTab = ({ currentUser }) => {
     if (currentUser?.uid) fetchFriends();
   }, [currentUser?.uid]);
 
+  // Filter friends on search
   useEffect(() => {
     setFilteredFriends(
       friends.filter((f) =>
@@ -102,6 +121,13 @@ const GameTab = ({ currentUser }) => {
     );
   }, [searchQuery, friends]);
 
+  // Invite friend (use correct backend event)
+  const inviteFriend = (friendId) => {
+    socket.emit('inviteFriend', { roomId, friendId });
+    toast.success('Friend invited');
+  };
+
+  // Timer and progress update
   useEffect(() => {
     if (isRunning && focusLevel >= 0.8 && !winner && currentUser?.uid) {
       timerRef.current = setInterval(() => {
@@ -126,33 +152,32 @@ const GameTab = ({ currentUser }) => {
     return () => clearInterval(timerRef.current);
   }, [isRunning, focusLevel, winner, targetTime, currentUser?.uid]);
 
+  // Time formatting
   const formatTime = (sec) => `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
-
-  const inviteFriend = (uid) => socket.emit('sendInvite', { from: currentUser.uid, to: uid, roomId });
 
   return (
     <div ref={containerRef} className="min-h-screen text-gray-200 p-4 sm:p-6">
       <div className="max-w-6xl mx-auto space-y-10">
         <div className="space-y-4 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold">⚔️
- Compete With Friends</h2>
-          
+          <h2 className="text-3xl sm:text-4xl font-bold">⚔️ Compete With Friends</h2>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Panel */}
           <div className="bg-indigo-950 rounded-xl p-4 sm:p-6 space-y-6">
             <div className="space-y-4 text-center">
-  <h2 className="text-lg sm:text-xl font-semibold text-cyan-300 mb-4">🎯 Study Game Room</h2>
-  <p className="text-indigo-300 max-w-2xl mx-auto leading-relaxed text-base sm:text-lg">
-    Step into a focus-powered challenge with your friends! 🎮 
-    <br /><br />
-    ⏱️ The goal: Stay concentrated for the full session duration.
-    <br />
-    🧠 Our AI Focus Tracker ensures fair play by monitoring your presence.
-    <br /><br />
-    💡 Outlast your peers, maintain your focus, and claim victory!
-  </p>
-</div>
+              <h2 className="text-lg sm:text-xl font-semibold text-cyan-300 mb-4">🎯 Study Game Room</h2>
+              <p className="text-indigo-300 max-w-2xl mx-auto leading-relaxed text-base sm:text-lg">
+                Step into a focus-powered challenge with your friends! 🎮 
+                <br /><br />
+                ⏱️ The goal: Stay concentrated for the full session duration.
+                <br />
+                🧠 Our AI Focus Tracker ensures fair play by monitoring your presence.
+                <br /><br />
+                💡 Outlast your peers, maintain your focus, and claim victory!
+              </p>
+            </div>
+
             {roomId ? (
               <>
                 <div>
@@ -179,7 +204,9 @@ const GameTab = ({ currentUser }) => {
                     <button
                       onClick={() => socket.emit('startGame', { roomId, targetTime })}
                       className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg text-white font-medium"
-                    >Start Game</button>
+                    >
+                      Start Game
+                    </button>
                   </div>
                 )}
 
@@ -226,7 +253,6 @@ const GameTab = ({ currentUser }) => {
                 </div>
               </>
             ) : (
-              
               <button
                 onClick={async () => {
                   try {
@@ -244,12 +270,14 @@ const GameTab = ({ currentUser }) => {
             )}
           </div>
 
+          {/* Right Panel */}
           <div className="bg-indigo-950 rounded-xl p-4 sm:p-6">
             <h3 className="text-lg sm:text-xl font-semibold text-cyan-300 mb-4">🧠 AI Focus Tracker</h3>
             <FocusTracker onFocusChange={setFocusLevel} />
           </div>
         </div>
 
+        {/* Invitation Modal */}
         {incomingInvite && (
           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-indigo-900 text-gray-200 p-6 rounded-xl shadow-2xl w-80 text-center space-y-4">
