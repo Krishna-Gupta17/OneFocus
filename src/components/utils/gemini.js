@@ -5,7 +5,7 @@ const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API); // API ke
 
 export async function fetchGeminiResponse(prompt) {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // VALID for v1
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" }); // VALID for v1
     const result = await model.generateContent(prompt);
     const response = await result.response;
     return response.text();
@@ -14,3 +14,4 @@ export async function fetchGeminiResponse(prompt) {
     return "⚠️ There was an error getting a response from Gemini. Please try again.";
   }
 }
+
