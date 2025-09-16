@@ -73,7 +73,8 @@ const TodoList = ({ tasks = [], onUpdateTasks }) => {
   };
 
   return (
-    <div className="backdrop-blur-lg bg-white/10 p-4 md:p-6 rounded-2xl border border-white/20">
+    <div className="backdrop-blur-lg bg-white/10 p-4 md:p-6 rounded-2xl border border-white/20 h-full flex flex-col">
+
       <h3 className="text-xl font-bold text-white mb-4">Study Tasks</h3>
 
       {/* Responsive Input Row */}
@@ -106,7 +107,7 @@ const TodoList = ({ tasks = [], onUpdateTasks }) => {
       </div>
 
       {/* Task List */}
-      <div ref={listRef} className="space-y-3 max-h-64 overflow-y-auto">
+      <div ref={listRef} className="space-y-3 flex-1 overflow-y-auto pr-1">
         {tasks.length === 0 ? (
           <p className="text-white/60 text-center py-8">No tasks yet. Add one above!</p>
         ) : (
