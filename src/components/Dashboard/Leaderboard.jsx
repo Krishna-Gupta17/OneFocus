@@ -164,7 +164,10 @@ const Leaderboard = ({ currentUser, showFriendsOnly = false }) => {
   }
 
   return (
-    <div ref={leaderboardRef} className="backdrop-blur-lg bg-white/10 p-6 rounded-2xl border border-white/20">
+<div
+  ref={leaderboardRef}
+className="backdrop-blur-lg bg-white/10 pt-4 md:pt-6 px-4 md:px-6 pb-0 rounded-2xl border border-white/20 h-full flex flex-col"
+ >
       <div className="flex items-center gap-2 mb-6">
         <TrophyIcon className="w-6 h-6 text-yellow-400" />
         <h3 className="text-xl font-bold text-white">
@@ -212,7 +215,7 @@ const Leaderboard = ({ currentUser, showFriendsOnly = false }) => {
         </div>
       )}
 
-      <div className="space-y-3">
+      <div className="flex-1  space-y-3 max-h-64 overflow-y-auto pr-2">
         {users.length === 0 ? (
           <p className="text-white/60 text-center py-8">
             {showFriendsOnly ? 'No friends yet. Add some friends to compete!' : 'No users found.'}
@@ -266,14 +269,14 @@ const Leaderboard = ({ currentUser, showFriendsOnly = false }) => {
         )}
       </div>
 
-      <div className="mt-6 text-center">
+      <div className="mt-2 text-center">
         <p className="text-white/60 text-sm">
           {showFriendsOnly 
             ? 'Compete with friends and climb the leaderboard!'
             : 'Complete study sessions to earn points and climb the global leaderboard!'
           }
         </p>
-        <div className="mt-2 flex justify-center gap-4 text-xs text-white/40">
+        <div className="mt-1 flex justify-center gap-4 text-xs text-white/40">
           <span>• 10 pts per minute studied</span>
           <span>• Bonus for high focus score</span>
         </div>
