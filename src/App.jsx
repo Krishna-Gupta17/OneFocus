@@ -10,11 +10,11 @@ import Settings from './components/Settings/Settings';
 import { gsap } from 'gsap';
 import { Toaster } from 'react-hot-toast';
 import AIChatWidget from './components/Dashboard/AIchat'; // ✅ Chat widget
-
+import LandingPage from './components/HOMEPAGE/LandingPage';
 function App() {
   const { user, loading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('home');
 
   useEffect(() => {
     if (user) {
@@ -115,6 +115,8 @@ function App() {
 
   const renderActiveTab = () => {
     switch (activeTab) {
+      case 'home':
+      return <LandingPage/>
       case 'dashboard':
         return <Dashboard user={user} />;
       case 'analytics':
