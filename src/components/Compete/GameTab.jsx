@@ -6,6 +6,7 @@ import { PlayIcon, StopIcon, UserGroupIcon, PlusIcon } from '@heroicons/react/24
 import { useParams } from 'react-router-dom';
 import FocusTracker from './FocusTracker';
 import { gsap } from 'gsap';
+import RealTimeChart from './RealTimeChart';
 
 const socket = io(import.meta.env.VITE_SERVER_URL);
 
@@ -275,6 +276,12 @@ const GameTab = ({ currentUser }) => {
             <h3 className="text-lg sm:text-xl font-semibold text-cyan-300 mb-4">🧠 AI Focus Tracker</h3>
             <FocusTracker onFocusChange={setFocusLevel} />
           </div>
+
+          <div className="bg-indigo-950 rounded-xl p-4 sm:p-6">
+            <h3 className="text-lg sm:text-xl font-semibold text-cyan-300 mb-4">🧠 AI Focus Tracker</h3>
+            <RealTimeChart/>
+          </div>
+
         </div>
 
         {/* Invitation Modal */}
