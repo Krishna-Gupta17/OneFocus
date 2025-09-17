@@ -59,19 +59,5 @@ body,
 /* Enhanced scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
+  display: none;
 }
-
-::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, #8b5cf6, #3b82f6);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(to bottom, #7c3aed, #2563eb);
-}
-
