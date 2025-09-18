@@ -49,7 +49,15 @@ const Header = () => {
           <div ref={logoRef} className="flex items-center space-x-2 group cursor-pointer">
             <div className="relative">
               <Focus className="w-8 h-8 text-cyan-400 group-hover:text-cyan-300 transition-colors duration-300" />
-              <div className="absolute inset-0 bg-cyan-400/20 rounded-full blur-lg group-hover:bg-cyan-300/30 transition-all duration-300"></div>
+              <div className="absolute inset-0 bg-cyan-400/20 rounded-full blur-lg group-hover:bg-cyan-300/30 transition-all duration-300">
+              <img
+  src="/logo_transparent_embedded (2).svg"
+  alt="icon"
+  className="w-12 h-13"
+  style={{
+    filter: "brightness(1.3) drop-shadow(0 0 20px rgba(0, 255, 255, 1))",
+  }}
+/></div>
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
               One Focus

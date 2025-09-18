@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { PlayIcon, PauseIcon, StopIcon, ClockIcon, CogIcon } from '@heroicons/react/24/solid';
 import { gsap } from 'gsap';
 import { useAuth } from '../../hooks/useAuth';
@@ -17,19 +17,21 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
     timerDuration: 25,
     breakDuration: 5
   });
+  const [manualPause, setManualPause] = useState(false);
+  const [tabSwitches, setTabSwitches] = useState(0);
+  const [isTabVisible, setIsTabVisible] = useState(true);
+  const [wasRunningBeforeHidden, setWasRunningBeforeHidden] = useState(false);
+  
   const timerRef = useRef(null);
   const floatAnimation = useRef(null);
   const { user } = useAuth();
-  // adding new usestate for timer issue
-  const [manualPause, setManualPause] = useState(false);
 
   useEffect(() => {
     // Load user settings
     loadUserSettings();
     
     // Sci-fi animation for timer container
-    // updation line for timer stop
-    gsap.set(timerRef.current, { clearProps: 'all' , y:0});
+    gsap.set(timerRef.current, { clearProps: 'all', y: 0 });
 
     gsap.fromTo(timerRef.current, 
       { scale: 0, opacity: 0, rotationY: 180 },
@@ -39,23 +41,39 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
         rotationY: 0,
         duration: 1.2, 
         ease: "back.out(1.7)",
-        // onComplete: () => {
-        //   // Add controlled floating animation
-        //   // floatAnimation.current = gsap.to(timerRef.current, {
-        //   //   y: -3,
-        //   //   duration: 3,
-        //   //   repeat: -1,
-        //   //   yoyo: true,
-        //   //   ease: "sine.inOut"
-        //   // });
-        // }
       }
     );
 
-    // return () => {
-    //   if (floatAnimation.current) floatAnimation.current.kill();
-    // };
-  }, []);
+    // Setup tab visibility detection
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setIsTabVisible(false);
+        if (isActive) {
+          setWasRunningBeforeHidden(true);
+          setTabSwitches(prev => prev + 1);
+          setIsActive(false);
+          onTimerPause?.();
+          toast('Timer paused - tab hidden');
+        } else {
+          setWasRunningBeforeHidden(false);
+        }
+      } else {
+        setIsTabVisible(true);
+        if (wasRunningBeforeHidden) {
+          setIsActive(true);
+          onTimerStart?.();
+          toast('Timer resumed - tab visible');
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (floatAnimation.current) floatAnimation.current.kill();
+    };
+  }, [isActive, wasRunningBeforeHidden, onTimerPause, onTimerStart]);
 
   useEffect(() => {
     let interval = null;
@@ -85,7 +103,7 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
         repeat: 3
       });
     }
-  }, [focusLevel, isActive, sessionType, userSettings.focusThreshold]);
+  }, [focusLevel, isActive, sessionType, userSettings.focusThreshold, onFocusThresholdReached, onTimerPause]);
 
   useEffect(() => {
     // Resume when focus comes back above threshold
@@ -93,20 +111,8 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
       setTimeout(() => {
         setIsActive(true);
         onTimerStart?.();
-        setManualPause(false); // this line for timer by me
+        setManualPause(false);
 
-        // for resolving timer autoplay
-//         const toggleTimer = () => {
-//   if (!isActive) {
-//     setManualPause(false); // user started manually
-    
-//   } else {
-//     setManualPause(true); // user paused manually
-    
-//   }
-// };
-        
-        
         // Success animation
         gsap.to(timerRef.current, {
           boxShadow: '0 0 30px #10b981, 0 0 60px #10b981',
@@ -116,7 +122,7 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
         });
       }, 1000);
     }
-  }, [focusLevel, isActive, sessionStartTime, sessionType, userSettings.focusThreshold]);
+  }, [focusLevel, isActive, sessionStartTime, sessionType, userSettings.focusThreshold, manualPause, onTimerStart]);
 
   const loadUserSettings = async () => {
     if (!user) return;
@@ -173,6 +179,7 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
       timerDuration: sessionType === 'focus' ? userSettings.timerDuration : userSettings.breakDuration,
       pauseCount: pausedTime,
       focusBreaks: Math.floor(pausedTime / 2),
+      tabSwitches,
       date: new Date()
     };
 
@@ -207,77 +214,42 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
       setTime(userSettings.timerDuration * 60);
       toast.success('Break over! Ready for another focus session.');
     }
+    
+    // Reset tab switches for the next session
+    setTabSwitches(0);
   };
-// old toggle timer
-
-  // const toggleTimer = () => {
-  //   if (!isActive) {
-  //     // Starting timer
-  //     if (!sessionStartTime) {
-  //       setSessionStartTime(new Date());
-  //     }
-  //     setIsActive(true);
-  //     // adding timer issue resolve here
-  //     setIsActive(true);
-  //     setManualPause(false); 
-  //     onTimerStart?.();
-  //     toast.success(`${sessionType === 'focus' ? 'Focus' : 'Break'} session started!`);
-      
-  //     // Start animation
-  //     gsap.to(timerRef.current, {
-  //       boxShadow: '0 0 30px #8b5cf6, 0 0 60px #8b5cf6',
-  //       duration: 0.3
-  //     });
-  //   } else {
-  //     // Pausing timer
-  //     setIsActive(false);
-  //     setIsActive(true); // this line by timer
-  //     setManualPause(false); // this line by timer
-  //     setPausedTime(prev => prev + 1);
-  //     onTimerPause?.();
-  //     toast('Timer paused');
-      
-  //     // Pause animation
-  //     gsap.to(timerRef.current, {
-  //       boxShadow: '0 0 10px rgba(139, 92, 246, 0.3)',
-  //       duration: 0.3
-  //     });
-  //   }
-  // };
-
-  // new toggletimer
 
   const toggleTimer = () => {
-  if (!isActive) {
-    // Starting timer
-    if (!sessionStartTime) {
-      setSessionStartTime(new Date());
+    if (!isActive) {
+      // Starting timer
+      if (!sessionStartTime) {
+        setSessionStartTime(new Date());
+      }
+      setIsActive(true);
+      setManualPause(false);
+      onTimerStart?.();
+      toast.success(`${sessionType === 'focus' ? 'Focus' : 'Break'} session started!`);
+      
+      // Start animation
+      gsap.to(timerRef.current, {
+        boxShadow: '0 0 30px #8b5cf6, 0 0 60px #8b5cf6',
+        duration: 0.3
+      });
+    } else {
+      // Pausing timer
+      setIsActive(false);
+      setManualPause(true);
+      setPausedTime(prev => prev + 1);
+      onTimerPause?.();
+      toast('Timer paused');
+      
+      // Pause animation
+      gsap.to(timerRef.current, {
+        boxShadow: '0 0 10px rgba(139, 92, 246, 0.3)',
+        duration: 0.3
+      });
     }
-    setIsActive(true);
-    setManualPause(false); // user manually started
-    onTimerStart?.();
-    toast.success(`${sessionType === 'focus' ? 'Focus' : 'Break'} session started!`);
-
-    // Start animation
-    gsap.to(timerRef.current, {
-      boxShadow: '0 0 30px #8b5cf6, 0 0 60px #8b5cf6',
-      duration: 0.3
-    });
-  } else {
-    // Pausing timer
-    setIsActive(false); // ✅ stop timer
-    setManualPause(true); // ✅ mark manual pause
-    setPausedTime(prev => prev + 1);
-    onTimerPause?.();
-    toast('Timer paused');
-
-    // Pause animation
-    gsap.to(timerRef.current, {
-      boxShadow: '0 0 10px rgba(139, 92, 246, 0.3)',
-      duration: 0.3
-    });
-  }
-};
+  };
 
   const resetTimer = () => {
     // Save partial session if there was progress
@@ -294,6 +266,7 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
           timerDuration: sessionType === 'focus' ? userSettings.timerDuration : userSettings.breakDuration,
           pauseCount: pausedTime,
           focusBreaks: Math.floor(pausedTime / 2),
+          tabSwitches,
           date: new Date()
         };
         saveSessionToDatabase(sessionData);
@@ -304,6 +277,8 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
     setTime(sessionType === 'focus' ? userSettings.timerDuration * 60 : userSettings.breakDuration * 60);
     setSessionStartTime(null);
     setPausedTime(0);
+    setTabSwitches(0);
+    setWasRunningBeforeHidden(false);
     onTimerPause?.();
     toast('Timer reset');
     
@@ -317,7 +292,7 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
     if (!isActive) {
       setTime(customTime * 60);
       setUserSettings(prev => ({ ...prev, timerDuration: customTime }));
-      setShowSettings(false); // Close settings after applying
+      setShowSettings(false);
       toast.success(`Timer set to ${customTime} minutes`);
     }
   };
@@ -335,21 +310,18 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
   return (
     <div 
       ref={timerRef} 
-      // addition of just below line for timer stop.
       style={{ transform: 'translateY(0px)' }}
       className="backdrop-blur-lg bg-white/10 p-6 rounded-2xl border border-white/20 relative overflow-hidden"
-      // Doing it for removing timer hover effect.
-      // onMouseEnter={() => {
-      //   if (floatAnimation.current) floatAnimation.current.pause();
-      //   gsap.to(timerRef.current, { y: 0, duration: 0.3 });
-      // }}
-      // onMouseLeave={() => {
-      //   if (floatAnimation.current) floatAnimation.current.play();
-      // }}
     >
       {/* Sci-fi background effects */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-blue-500/10 to-cyan-500/10 "></div>
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500"></div>
+      
+      {/* Tab visibility indicator */}
+      <div className="absolute top-2 right-2 flex items-center">
+        <div className={`inline-block h-3 w-3 rounded-full mr-1 ${isTabVisible ? 'bg-green-500' : 'bg-red-500'}`}></div>
+        <span className="text-xs text-white/60">{isTabVisible ? 'Visible' : 'Hidden'}</span>
+      </div>
       
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-4">
@@ -487,13 +459,12 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
             ></div>
           </div>
           
-          {pausedTime > 0 && (
-            <div className="text-center">
-              {/* <span className="text-xs text-white/60 bg-white/10 px-2 py-1 rounded-full">
-                Paused {pausedTime} time{pausedTime > 1 ? 's' : ''}
-              </span> */}
-            </div>
-          )}
+          <div className="flex justify-between text-xs text-white/60">
+            <span>Tab Switches: {tabSwitches}</span>
+            {pausedTime > 0 && (
+              <span>Paused: {pausedTime} time{pausedTime > 1 ? 's' : ''}</span>
+            )}
+          </div>
         </div>
       </div>
     </div>
