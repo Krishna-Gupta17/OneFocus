@@ -42,8 +42,14 @@ const Navbar = () => { // Remove activeTab and setActiveTab props
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            <img src="/assets/Asset 1@4x 4[1].png" alt="icon" className="w-6 h-6" />
-            <h1 className="text-xl font-bold text-white">ONE FOCUS</h1>
+<img
+  src="/logo_transparent_embedded.svg"
+  alt="icon"
+  className="w-12 h-13"
+  style={{
+    filter: "brightness(1.3) drop-shadow(0 0 20px rgba(0, 255, 255, 1))",
+  }}
+/>            <h1 className="text-xl font-bold text-white">ONE FOCUS</h1>
           </div>
 
           {/* Desktop Nav */}
