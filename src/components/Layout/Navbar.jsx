@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import { useNavigate, useLocation } from 'react-router-dom'; // Add these imports
 import { UserIcon } from '@heroicons/react/24/outline';
 import {
   HomeIcon,
@@ -11,16 +12,29 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 
-const Navbar = ({ activeTab, setActiveTab }) => {
+const Navbar = () => { // Remove activeTab and setActiveTab props
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation(); // Get current location
 
   const navItems = [
-    { id: 'dashboard', name: 'Dashboard', icon: HomeIcon },
-    { id: 'analytics', name: 'Analytics', icon: ChartBarIcon },
-    { id: 'compete', name: 'Compete', icon: UserGroupIcon },
-    { id: 'settings', name: 'Profile', icon: UserIcon },
+    { id: 'dashboard', name: 'Dashboard', icon: HomeIcon, path: '/dashboard' },
+    { id: 'analytics', name: 'Analytics', icon: ChartBarIcon, path: '/analytics' },
+    { id: 'compete', name: 'Compete', icon: UserGroupIcon, path: '/compete' },
+    { id: 'settings', name: 'Profile', icon: UserIcon, path: '/settings' },
   ];
+
+  // Function to handle navigation
+  const handleNavigation = (path) => {
+    navigate(path);
+    setMobileMenuOpen(false);
+  };
+
+  // Check if a tab is active based on current route
+  const isActiveTab = (path) => {
+    return location.pathname === path;
+  };
 
   return (
     <nav className="fixed top-0 left-0 w-full z-50 backdrop-blur-lg bg-white/10 border-b border-white/20">
@@ -39,9 +53,9 @@ const Navbar = ({ activeTab, setActiveTab }) => {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => handleNavigation(item.path)}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
-                    activeTab === item.id
+                    isActiveTab(item.path)
                       ? 'bg-purple-600/50 text-white'
                       : 'text-white/70 hover:text-white hover:bg-white/10'
                   }`}
@@ -84,18 +98,15 @@ const Navbar = ({ activeTab, setActiveTab }) => {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden mt-2 space-y-2">
+          <div className="md:hidden mt-2 space-y-2 pb-4">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
                 <button
                   key={item.id}
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    setMobileMenuOpen(false);
-                  }}
+                  onClick={() => handleNavigation(item.path)}
                   className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
-                    activeTab === item.id
+                    isActiveTab(item.path)
                       ? 'bg-purple-600/50 text-white'
                       : 'text-white/70 hover:text-white hover:bg-white/10'
                   }`}
