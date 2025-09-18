@@ -154,9 +154,9 @@ const Hero = () => {
         <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-2xl mx-auto">
           <div className="text-center group">
             <div className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent group-hover:scale-110 transition-transform duration-300">
-              10K+
+              1st
             </div>
-            <div className="text-slate-400 mt-2">Active Learners</div>
+            <div className="text-slate-400 mt-2">Hackathon Ranking</div>
           </div>
           <div className="text-center group">
             <div className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent group-hover:scale-110 transition-transform duration-300">
@@ -166,9 +166,9 @@ const Hero = () => {
           </div>
           <div className="text-center group">
             <div className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent group-hover:scale-110 transition-transform duration-300">
-              1st
+              10+
             </div>
-            <div className="text-slate-400 mt-2">Hackathon Ranking</div>
+            <div className="text-slate-400 mt-2">Features</div>
           </div>
         </div>
       </div>

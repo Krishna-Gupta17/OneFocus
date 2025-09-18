@@ -125,9 +125,29 @@ const Footer = () => {
                   placeholder="Enter your email"
                   className="flex-1 md:w-64 px-4 py-3 bg-slate-800 border border-slate-600 rounded-full text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500 transition-colors duration-300"
                 />
-                <button className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 px-6 py-3 rounded-full text-white font-semibold transition-all duration-300 hover:scale-105 whitespace-nowrap">
-                  Subscribe
-                </button>
+               <button
+  onClick={() => {
+    const recipient = "dixitayush608@gmail.com";
+    const orgEmail = "dixitayush663@gmail.com";
+    const subject = "Hello from Team One Focus";
+    const body = "Hi there,\n\nI wanted to reach out to Team One Focus for .... !";
+
+    const params = new URLSearchParams({
+      view: "cm",
+      fs: "1",
+      to: recipient,
+      cc: orgEmail,
+      su: subject,
+      body: body
+    });
+
+    const gmailUrl = `https://mail.google.com/mail/?${params.toString()}`;
+    window.location.href = gmailUrl; // Opens in the same tab
+  }}
+  className="gmail-button bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 px-6 py-3 rounded-full text-white font-semibold transition-all duration-300 hover:scale-105 whitespace-nowrap"
+>
+  Connect 
+</button>
               </div>
             </div>
           </div>

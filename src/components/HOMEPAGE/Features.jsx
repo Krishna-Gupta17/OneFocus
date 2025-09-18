@@ -135,7 +135,7 @@ const Features = () => {
           <div className="inline-flex items-center gap-4 bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-8">
             <div className="flex-1">
               <h3 className="text-2xl font-bold text-white mb-2">Ready to Start Focusing?</h3>
-              <p className="text-slate-300">Join thousands of learners already using One Focus</p>
+              <p className="text-slate-300">Join the learners community of One Focus</p>
             </div>
             <button
             onClick={handleClick}
