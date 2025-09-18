@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth,GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, collection,   doc,addDoc, getDocs, query, orderBy ,where, serverTimestamp,  deleteDoc,} from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -16,5 +16,9 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const messagesCollection = collection(db, 'chatMessages');
 export const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
 export default app;
-export { db, messagesCollection, addDoc,  doc, getDocs, query, orderBy, where ,  deleteDoc,serverTimestamp};
+export { db, messagesCollection,googleProvider ,addDoc,  doc, getDocs, query, orderBy, where ,  deleteDoc,serverTimestamp};
