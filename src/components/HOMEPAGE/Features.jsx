@@ -18,7 +18,9 @@ const Features = () => {
   const sectionRef = useRef(null);
   const titleRef = useRef(null);
   const cardsRef = useRef(null);
-
+  const handleClick = () => {
+    navigate("/getstarted"); // 👈 change "/dashboard" to your target route
+  };
   const features = [
     {
       icon: BarChart3,
@@ -135,7 +137,9 @@ const Features = () => {
               <h3 className="text-2xl font-bold text-white mb-2">Ready to Start Focusing?</h3>
               <p className="text-slate-300">Join thousands of learners already using One Focus</p>
             </div>
-            <button className="group bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 px-6 py-3 rounded-full text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-cyan-500/25 hover:scale-105 flex items-center gap-2">
+            <button
+            onClick={handleClick}
+            className="group bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 px-6 py-3 rounded-full text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-cyan-500/25 hover:scale-105 flex items-center gap-2">
               Get Started
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
             </button>
