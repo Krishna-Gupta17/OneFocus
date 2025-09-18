@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { PlayIcon, PauseIcon, TrashIcon } from '@heroicons/react/24/solid';
-import { SpeakerWaveIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { SpeakerWaveIcon, XMarkIcon, CameraIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import { gsap } from 'gsap';
 import { useAuth } from '../../hooks/useAuth';
 import toast from 'react-hot-toast';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || `${import.meta.env.VITE_SERVER_URL}`;
 
@@ -14,8 +16,11 @@ const YouTubePlayer = () => {
   const [currentVideo, setCurrentVideo] = useState(null);
   const [videoGallery, setVideoGallery] = useState([]);
   const [volume, setVolume] = useState(50);
+  const [screenshots, setScreenshots] = useState([]);
+  const [showScreenshotPanel, setShowScreenshotPanel] = useState(false);
   const playerRef = useRef(null);
   const iframeRef = useRef(null);
+  const videoContainerRef = useRef(null);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -37,6 +42,7 @@ const YouTubePlayer = () => {
       if (response.ok) {
         const userData = await response.json();
         setVideoGallery(userData.videoGallery || []);
+        setScreenshots(userData.screenshots || []);
       }
     } catch (error) {
       console.error('Error loading video gallery:', error);
@@ -49,28 +55,18 @@ const YouTubePlayer = () => {
     return (match && match[2].length === 11) ? match[2] : null;
   };
 
-  // const getVideoTitle = async (videoId) => {
-  //   const titles = [
-      
-  //   ];
-  //   return titles[Math.floor(Math.random() * titles.length)];
-  // };
-
   const getVideoTitle = async (videoId) => {
-  try {
-    const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
-    if (response.ok) {
-      const data = await response.json();
-      return data.title;
+    try {
+      const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+      if (response.ok) {
+        const data = await response.json();
+        return data.title;
+      }
+    } catch (error) {
+      console.error('Failed to fetch video title:', error);
     }
-  } catch (error) {
-    console.error('Failed to fetch video title:', error);
-  }
-
-  // fallback if fetch fails
-  return 'Untitled Video';
-};
-
+    return 'Untitled Video';
+  };
 
   const saveVideoToGallery = async (videoData) => {
     if (!user) return;
@@ -81,28 +77,153 @@ const YouTubePlayer = () => {
         body: JSON.stringify(videoData),
       });
 
-      // if (response.ok) {
-      //   const updatedGallery = await response.json();
-      //   setVideoGallery(updatedGallery);
-      //   toast.success('Video added to gallery!');
-      // }
-
       if (response.ok) {
-      const updatedGallery = await response.json();
-
-      // ✅ Filter out duplicates by video ID before setting state
-      const uniqueGallery = updatedGallery.filter(
-        (v, i, self) => i === self.findIndex((x) => x.id === v.id)
-      );
-
-      setVideoGallery(uniqueGallery);
-      toast.success('Video added to gallery!');
-    } else {
-      toast.error('Failed to save video.');
-    }
+        const updatedGallery = await response.json();
+        const uniqueGallery = updatedGallery.filter(
+          (v, i, self) => i === self.findIndex((x) => x.id === v.id)
+        );
+        setVideoGallery(uniqueGallery);
+        toast.success('Video added to gallery!');
+      } else {
+        toast.error('Failed to save video.');
+      }
     } catch (error) {
       console.error('Error saving video:', error);
       toast.error('Failed to save video');
+    }
+  };
+
+  const saveScreenshotToDatabase = async (screenshotData) => {
+    if (!user) return;
+    try {
+      const response = await fetch(`${API_BASE}/api/users/${user.uid}/screenshots`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(screenshotData),
+      });
+
+      if (response.ok) {
+        const updatedScreenshots = await response.json();
+        setScreenshots(updatedScreenshots);
+      }
+    } catch (error) {
+      console.error('Error saving screenshot:', error);
+    }
+  };
+
+  const takeScreenshot = async () => {
+    if (!currentVideo) {
+      toast.error('No video is playing');
+      return;
+    }
+
+    try {
+      // Create a screenshot object
+      const screenshotData = {
+        id: Date.now(),
+        videoId: currentVideo.id,
+        videoTitle: currentVideo.title,
+        timestamp: new Date(),
+        imageData: null // Will be filled after capture
+      };
+
+      // Capture the video container
+      const canvas = await html2canvas(videoContainerRef.current, {
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null
+      });
+
+      // Convert canvas to data URL
+      screenshotData.imageData = canvas.toDataURL('image/png');
+
+      // Update state and save to database
+      setScreenshots(prev => [...prev, screenshotData]);
+      saveScreenshotToDatabase(screenshotData);
+      
+      toast.success('Screenshot captured!');
+      
+      // Visual feedback
+      gsap.fromTo(videoContainerRef.current, 
+        { boxShadow: '0 0 0 0 rgba(59, 130, 246, 0.5)' },
+        { 
+          boxShadow: '0 0 0 5px rgba(59, 130, 246, 0.5)',
+          duration: 0.3,
+          yoyo: true,
+          repeat: 1
+        }
+      );
+    } catch (error) {
+      console.error('Error taking screenshot:', error);
+      toast.error('Failed to capture screenshot');
+    }
+  };
+
+  const generateScreenshotPDF = async () => {
+    if (screenshots.length === 0) {
+      toast.error('No screenshots to download');
+      return;
+    }
+
+    try {
+      // Create a new PDF
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      const contentWidth = pageWidth - margin * 2;
+      
+      // Add title
+      pdf.setFontSize(20);
+      pdf.text('Video Screenshots', pageWidth / 2, 15, { align: 'center' });
+      
+      let yPosition = 25;
+      
+      for (let i = 0; i < screenshots.length; i++) {
+        const screenshot = screenshots[i];
+        
+        // Add new page if needed (except for first screenshot)
+        if (i > 0 && yPosition > pageHeight - 80) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        
+        // Add video title and timestamp
+        pdf.setFontSize(12);
+        pdf.setTextColor(100);
+        pdf.text(`Video: ${screenshot.videoTitle}`, margin, yPosition);
+        pdf.text(`Timestamp: ${new Date(screenshot.timestamp).toLocaleString()}`, margin, yPosition + 5);
+        
+        yPosition += 10;
+        
+        // Add screenshot image
+        const imgProps = pdf.getImageProperties(screenshot.imageData);
+        const imgWidth = contentWidth;
+        const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+        
+        // Check if we need a new page for the image
+        if (yPosition + imgHeight > pageHeight - margin) {
+          pdf.addPage();
+          yPosition = margin;
+        }
+        
+        pdf.addImage(screenshot.imageData, 'PNG', margin, yPosition, imgWidth, imgHeight);
+        yPosition += imgHeight + 10;
+        
+        // Add separator if not last screenshot
+        if (i < screenshots.length - 1) {
+          pdf.setDrawColor(200);
+          pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+          yPosition += 5;
+        }
+      }
+      
+      // Save the PDF
+      pdf.save('video-screenshots.pdf');
+      toast.success('PDF downloaded successfully!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF');
     }
   };
 
@@ -165,6 +286,26 @@ const YouTubePlayer = () => {
     }
   };
 
+  const deleteScreenshot = async (screenshotId) => {
+    if (!user) return;
+    try {
+      const updatedScreenshots = screenshots.filter(s => s.id !== screenshotId);
+      const response = await fetch(`${API_BASE}/api/users/${user.uid}/screenshots`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedScreenshots),
+      });
+
+      if (response.ok) {
+        setScreenshots(updatedScreenshots);
+        toast.success('Screenshot deleted');
+      }
+    } catch (error) {
+      console.error('Error deleting screenshot:', error);
+      toast.error('Failed to delete screenshot');
+    }
+  };
+
   const togglePlay = () => {
     setIsPlaying(!isPlaying);
     toast(isPlaying ? 'Video paused' : 'Video playing');
@@ -199,11 +340,10 @@ const YouTubePlayer = () => {
 
       {currentVideo ? (
         <div className="video-container mb-4">
-          <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-video mb-4">
+          <div ref={videoContainerRef} className="relative bg-gray-900 rounded-lg overflow-hidden aspect-video mb-4">
             <iframe
               ref={iframeRef}
-               src={`https://www.youtube.com/embed/${currentVideo.id}?modestbranding=1&rel=0&showinfo=0&controls=1&autoplay=${isPlaying ? 1 : 0}&mute=${isMuted ? 1 : 0}`}
-              
+              src={`https://www.youtube.com/embed/${currentVideo.id}?modestbranding=1&rel=0&showinfo=0&controls=1&autoplay=${isPlaying ? 1 : 0}&mute=${isMuted ? 1 : 0}`}
               className="w-full h-full"
               frameBorder="0"
               allowFullScreen
@@ -232,6 +372,22 @@ const YouTubePlayer = () => {
                 {isMuted ? <XMarkIcon className="w-5 h-5" /> : <SpeakerWaveIcon className="w-5 h-5" />}
               </button>
 
+              <button
+                onClick={takeScreenshot}
+                className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full transform hover:scale-110 transition-all duration-200"
+                title="Take screenshot"
+              >
+                <CameraIcon className="w-5 h-5" />
+              </button>
+
+              <button
+                onClick={() => setShowScreenshotPanel(!showScreenshotPanel)}
+                className="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full transform hover:scale-110 transition-all duration-200"
+                title="View screenshots"
+              >
+                <DocumentArrowDownIcon className="w-5 h-5" />
+              </button>
+
               <input
                 type="range"
                 min="0"
@@ -250,6 +406,63 @@ const YouTubePlayer = () => {
           </div>
           <p>Enter a YouTube URL to start focused learning</p>
           <p className="text-sm mt-2">No recommendations, no distractions - just pure content</p>
+        </div>
+      )}
+
+      {/* Screenshot Panel */}
+      {showScreenshotPanel && (
+        <div className="border-t border-white/10 pt-4 mb-4">
+          <div className="flex justify-between items-center mb-3">
+            <h4 className="text-white font-semibold flex items-center gap-2">
+              <CameraIcon className="w-5 h-5" />
+              Screenshots ({screenshots.length})
+            </h4>
+            <div className="flex gap-2">
+              <button
+                onClick={generateScreenshotPDF}
+                disabled={screenshots.length === 0}
+                className="px-3 py-1 bg-green-600 hover:bg-green-700 disabled:bg-green-600/30 disabled:cursor-not-allowed text-white text-sm rounded transition-colors flex items-center gap-1"
+              >
+                <DocumentArrowDownIcon className="w-4 h-4" />
+                Download PDF
+              </button>
+              <button
+                onClick={() => setShowScreenshotPanel(false)}
+                className="p-1 text-white/60 hover:text-white rounded"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {screenshots.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-64 overflow-y-auto p-1">
+              {screenshots.map((screenshot) => (
+                <div key={screenshot.id} className="relative group">
+                  <img
+                    src={screenshot.imageData}
+                    alt={`Screenshot from ${screenshot.videoTitle}`}
+                    className="w-full h-24 object-cover rounded"
+                  />
+                  <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <button
+                      onClick={() => deleteScreenshot(screenshot.id)}
+                      className="p-1 bg-red-600/80 hover:bg-red-700 text-white rounded"
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="text-xs text-white/80 mt-1 truncate">
+                    {new Date(screenshot.timestamp).toLocaleTimeString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-white/60 text-sm text-center py-4">
+              No screenshots yet. Take screenshots while watching videos.
+            </p>
+          )}
         </div>
       )}
 

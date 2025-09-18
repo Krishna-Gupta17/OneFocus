@@ -182,14 +182,7 @@ const Dashboard = ({ user }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="dashboard-card">
-          <TodoList tasks={tasks} onUpdateTasks={updateTasks} />
-        </div>
-        <div className="dashboard-card">
-          <MusicPlayer />
-        </div>
-      </div>
+     
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="dashboard-card">
@@ -200,6 +193,14 @@ const Dashboard = ({ user }) => {
         </div>
       </div>
 
+ <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="dashboard-card">
+          <TodoList tasks={tasks} onUpdateTasks={updateTasks} />
+        </div>
+        <div className="dashboard-card">
+          <MusicPlayer />
+        </div>
+      </div>
       
       
       {/* Completion celebration element */}
