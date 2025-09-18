@@ -136,10 +136,10 @@ const Footer = () => {
           <div className="border-t border-slate-800/50 pt-8">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               <p className="text-slate-400 text-center md:text-left">
-                © 2024 One Focus. All rights reserved.
+                © 2025 One Focus. All rights reserved.
               </p>
               <div className="flex items-center gap-6">
-                <span className="text-slate-400">Made with</span>
+                <span className="text-slate-400">Made with Creativity </span>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
                   <span className="text-slate-400">for learners everywhere</span>
