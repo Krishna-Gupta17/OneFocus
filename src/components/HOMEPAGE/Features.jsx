@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Play
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -18,6 +19,7 @@ const Features = () => {
   const sectionRef = useRef(null);
   const titleRef = useRef(null);
   const cardsRef = useRef(null);
+    const navigate=useNavigate();
   const handleClick = () => {
     navigate("/getstarted"); // 👈 change "/dashboard" to your target route
   };

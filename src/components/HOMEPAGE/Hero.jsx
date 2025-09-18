@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { Play, ArrowRight, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Hero = () => {
   const heroRef = useRef(null);
@@ -10,6 +11,7 @@ const Hero = () => {
   const shapesRef = useRef(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
+    const navigate=useNavigate();
 
   // YouTube video ID
   const videoId = 'Yg9sZ3gpv9I';
@@ -131,7 +133,9 @@ const Hero = () => {
         </p>
 
         <div ref={buttonsRef} className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <button className="group relative bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 shadow-xl hover:shadow-cyan-500/25 hover:scale-105 overflow-hidden">
+          <button
+          onClick={() => navigate("/getstarted")}
+          className="group relative bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 shadow-xl hover:shadow-cyan-500/25 hover:scale-105 overflow-hidden">
             <span className="relative z-10 flex items-center gap-2">
               Start Free Trial
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />

@@ -317,7 +317,7 @@ import Settings from './components/Settings/Settings';
 import { Toaster } from 'react-hot-toast';
 import AIChatWidget from './components/Dashboard/AIchat';
 import NexusAuth from './components/Auth/NexusAuth';
-
+import About from './components/HOMEPAGE/About';
 function App() {
   const { user, loading } = useAuth();
 
@@ -374,6 +374,19 @@ function App() {
                   </div>
                 }
               />
+              
+            )}
+
+            {!user && (
+              <Route
+                path="/about"
+                element={
+                  <div className="min-h-screen flex items-center justify-center p-4">
+                    <About/>
+                  </div>
+                }
+              />
+              
             )}
 
             {/* Protected routes */}

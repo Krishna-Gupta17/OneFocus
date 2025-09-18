@@ -74,10 +74,14 @@ const Header = () => {
               Pricing
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-cyan-400 group-hover:w-full transition-all duration-300"></span>
             </a>
-            <a href="#about" className="text-slate-300 hover:text-cyan-400 transition-colors duration-300 relative group">
-              About
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-cyan-400 group-hover:w-full transition-all duration-300"></span>
-            </a>
+            <button
+  onClick={() => navigate("/about")}
+  className="text-slate-300 hover:text-cyan-400 transition-colors duration-300 relative group"
+>
+  About
+  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-cyan-400 group-hover:w-full transition-all duration-300"></span>
+</button>
+
             <button  
             onClick={handleClick}
             className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 px-6 py-2 rounded-full transition-all duration-300 shadow-lg hover:shadow-cyan-500/25 hover:scale-105">
@@ -104,9 +108,16 @@ const Header = () => {
               <a href="#pricing" className="text-slate-300 hover:text-cyan-400 transition-colors duration-300">
                 Pricing
               </a>
-              <a href="#about" className="text-slate-300 hover:text-cyan-400 transition-colors duration-300">
-                About
-              </a>
+              <button
+  onClick={() => {
+    navigate("/about");
+    setIsMenuOpen(false); // close menu after click
+  }}
+  className="text-slate-300 hover:text-cyan-400 transition-colors duration-300"
+>
+  About
+</button>
+
               <button 
               onClick={handleClick}
               className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 px-6 py-2 rounded-full transition-all duration-300 shadow-lg hover:shadow-cyan-500/25 w-fit">
