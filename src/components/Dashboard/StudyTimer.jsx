@@ -25,55 +25,40 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
   const timerRef = useRef(null);
   const floatAnimation = useRef(null);
   const { user } = useAuth();
+  const isActiveRef = useRef(isActive);
+const wasRunningBeforeHiddenRef = useRef(wasRunningBeforeHidden);
 
-  useEffect(() => {
-    // Load user settings
-    loadUserSettings();
-    
-    // Sci-fi animation for timer container
-    gsap.set(timerRef.current, { clearProps: 'all', y: 0 });
+useEffect(() => {
+  isActiveRef.current = isActive;
+  wasRunningBeforeHiddenRef.current = wasRunningBeforeHidden;
+}, [isActive, wasRunningBeforeHidden]);
 
-    gsap.fromTo(timerRef.current, 
-      { scale: 0, opacity: 0, rotationY: 180 },
-      { 
-        scale: 1, 
-        opacity: 1, 
-        rotationY: 0,
-        duration: 1.2, 
-        ease: "back.out(1.7)",
-      }
-    );
-
-    // Setup tab visibility detection
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        setIsTabVisible(false);
-        if (isActive) {
-          setWasRunningBeforeHidden(true);
-          setTabSwitches(prev => prev + 1);
-          setIsActive(false);
-          onTimerPause?.();
-          toast('Timer paused - tab hidden');
-        } else {
-          setWasRunningBeforeHidden(false);
-        }
+useEffect(() => {
+  const handleVisibilityChange = () => {
+    if (document.hidden) {
+      setIsTabVisible(false);
+      if (isActiveRef.current) {
+        setWasRunningBeforeHidden(true);
+        setTabSwitches(prev => prev + 1);
+        setIsActive(false);
+        onTimerPause?.();
+        toast('Timer paused - tab hidden');
       } else {
-        setIsTabVisible(true);
-        if (wasRunningBeforeHidden) {
-          setIsActive(true);
-          onTimerStart?.();
-          toast('Timer resumed - tab visible');
-        }
+        setWasRunningBeforeHidden(false);
       }
-    };
+    } else {
+      setIsTabVisible(true);
+      if (wasRunningBeforeHiddenRef.current) {
+        setIsActive(true);
+        onTimerStart?.();
+        toast('Timer resumed - tab visible');
+      }
+    }
+  };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      if (floatAnimation.current) floatAnimation.current.kill();
-    };
-  }, [isActive, wasRunningBeforeHidden, onTimerPause, onTimerStart]);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+}, [onTimerPause, onTimerStart]);
 
   useEffect(() => {
     let interval = null;

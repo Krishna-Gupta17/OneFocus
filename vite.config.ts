@@ -7,7 +7,16 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'], // optional
   },
-  build: {
-    outDir: 'dist',
+ build: {
+  outDir: 'dist',
+  rollupOptions: {
+    output: {
+      manualChunks: {
+        firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+        icons: ['lucide-react'],
+      },
+    },
   },
+}
+
 });
