@@ -277,10 +277,9 @@ const GameTab = ({ currentUser }) => {
             <FocusTracker onFocusChange={setFocusLevel} />
           </div>
 
-          <div className="bg-indigo-950 rounded-xl p-4 sm:p-6">
-            <h3 className="text-lg sm:text-xl font-semibold text-cyan-300 mb-4">🧠 AI Focus Tracker</h3>
-            <RealTimeChart/>
-          </div>
+         
+
+
 
         </div>
 
@@ -308,6 +307,12 @@ const GameTab = ({ currentUser }) => {
           </div>
         )}
       </div>
+      <div className="w-full bg-indigo-950 rounded-xl p-4 sm:p-6">
+  <h3 className="text-lg sm:text-xl font-semibold text-cyan-300 mb-4">
+   📈 RealTime Chart
+  </h3>
+  <RealTimeChart />
+</div>
     </div>
   );
 };
