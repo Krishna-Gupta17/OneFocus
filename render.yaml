@@ -5,6 +5,12 @@ services:
     buildCommand: npm run build
     staticPublishPath: dist
     routes:
+      # Canonical redirect for index.html
+      - type: redirect
+        source: /index.html
+        destination: /
+        statusCode: 301
+
       # SPA fallback: let the client router handle deep links
       - type: rewrite
         source: /*
