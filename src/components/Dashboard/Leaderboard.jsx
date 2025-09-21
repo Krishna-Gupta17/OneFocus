@@ -166,7 +166,7 @@ const Leaderboard = ({ currentUser, showFriendsOnly = false }) => {
   return (
 <div
   ref={leaderboardRef}
-  className="backdrop-blur-lg bg-white/10 pt-4 md:pt-6 px-4 md:px-6 pb-4 rounded-2xl border border-white/20 h-full flex flex-col min-h-0"
+  className="backdrop-blur-lg bg-white/10 pt-4 md:pt-6 px-4 md:px-6 pb-4 rounded-2xl border border-white/20 flex flex-col h-full min-h-0 overflow-hidden"
 >
       <div className="flex items-center gap-2 md:gap-3 mb-6 flex-wrap">
         <TrophyIcon className="w-6 h-6 text-yellow-400" />
@@ -215,7 +215,7 @@ const Leaderboard = ({ currentUser, showFriendsOnly = false }) => {
         </div>
       )}
 
-      <div className="flex-1 min-h-0 space-y-3 overflow-y-auto pr-2">
+  <div className="flex-1 min-h-0 space-y-3 overflow-y-auto pr-2">
         {users.length === 0 ? (
           <p className="text-white/60 text-center py-8">
             {showFriendsOnly ? 'No friends yet. Add some friends to compete!' : 'No users found.'}

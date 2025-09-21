@@ -187,11 +187,11 @@ const Dashboard = ({ user }) => {
 
      
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="dashboard-card">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 items-stretch">
+        <div className="dashboard-card h-full">
           <YouTubePlayer />
         </div>
-        <div className="dashboard-card">
+        <div className="dashboard-card h-full">
           <Leaderboard currentUser={user} showFriendsOnly={false} />
         </div>
       </div>

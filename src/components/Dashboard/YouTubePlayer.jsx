@@ -317,7 +317,7 @@ const YouTubePlayer = () => {
   };
 
   return (
-    <div ref={playerRef} className="max-w-3xl mx-auto backdrop-blur-lg bg-white/10 p-4 sm:p-6 rounded-2xl border border-white/20">
+    <div ref={playerRef} className="max-w-3xl mx-auto h-full flex flex-col backdrop-blur-lg bg-white/10 p-4 sm:p-6 rounded-2xl border border-white/20">
       <h3 className="text-xl font-bold text-white mb-4">Distraction-Free Video Player</h3>
 
       <div className="flex flex-col sm:flex-row gap-2 mb-4">
