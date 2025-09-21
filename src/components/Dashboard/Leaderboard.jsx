@@ -166,9 +166,9 @@ const Leaderboard = ({ currentUser, showFriendsOnly = false }) => {
   return (
 <div
   ref={leaderboardRef}
-className="backdrop-blur-lg bg-white/10 pt-4 md:pt-6 px-4 md:px-6 pb-0 rounded-2xl border border-white/20 h-full flex flex-col"
- >
-      <div className="flex items-center gap-2 mb-6">
+  className="backdrop-blur-lg bg-white/10 pt-4 md:pt-6 px-4 md:px-6 pb-4 rounded-2xl border border-white/20 h-full flex flex-col min-h-0"
+>
+      <div className="flex items-center gap-2 md:gap-3 mb-6 flex-wrap">
         <TrophyIcon className="w-6 h-6 text-yellow-400" />
         <h3 className="text-xl font-bold text-white">
           {showFriendsOnly ? 'Friends Leaderboard' : 'Global Leaderboard'}
@@ -196,14 +196,14 @@ className="backdrop-blur-lg bg-white/10 pt-4 md:pt-6 px-4 md:px-6 pb-0 rounded-2
 
       {/* Add Friend */}
       {showFriendsOnly && (
-        <div className="mb-4 flex gap-2">
+        <div className="mb-4 flex flex-col sm:flex-row gap-2">
           <input
             type="email"
             value={friendEmail}
             onChange={(e) => setFriendEmail(e.target.value)}
             placeholder="Friend's email address"
             className="flex-1 p-2 text-sm rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            onKeyPress={(e) => e.key === 'Enter' && sendFriendRequest()}
+            onKeyDown={(e) => e.key === 'Enter' && sendFriendRequest()}
           />
           <button
             onClick={sendFriendRequest}
@@ -215,7 +215,7 @@ className="backdrop-blur-lg bg-white/10 pt-4 md:pt-6 px-4 md:px-6 pb-0 rounded-2
         </div>
       )}
 
-      <div className="flex-1  space-y-3 max-h-64 overflow-y-auto pr-2">
+      <div className="flex-1 min-h-0 space-y-3 overflow-y-auto pr-2">
         {users.length === 0 ? (
           <p className="text-white/60 text-center py-8">
             {showFriendsOnly ? 'No friends yet. Add some friends to compete!' : 'No users found.'}

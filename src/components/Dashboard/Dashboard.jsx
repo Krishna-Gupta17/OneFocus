@@ -122,7 +122,7 @@ const Dashboard = ({ user }) => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6 relative">
+    <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 relative">
       {/* Animated background particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {[...Array(20)].map((_, i) => (

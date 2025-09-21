@@ -6,13 +6,18 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 import 'boxicons/css/boxicons.min.css';
 import 'tailwindcss/tailwind.css';
 import { useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { auth } from '../../firebase/config';
 
 
 const NexusAuth = () => {
-  const { user, loading, login, register } = useAuth();
+  const { user, loading, login, register, loginWithGoogle, loginWithFacebook, loginWithLinkedIn, forgotPassword, resendVerification, refreshUser } = useAuth();
+  const navigate = useNavigate();
   const [activePanel, setActivePanel] = useState('login');
-  const [notification, setNotification] = useState({ message: 'Welcome to Nexus Secure Portal', type: 'info', show: false });
+  const [notification, setNotification] = useState({ message: 'Welcome to OneFocus -_-', type: 'info', show: false });
+  const [justRegistered, setJustRegistered] = useState(false);
   const [errors, setErrors] = useState({ login: '', register: '', alert: '' });
+  const [checkingVerify, setCheckingVerify] = useState(false);
   // Create refs for DOM elements
   const particleContainerRef = useRef(null);
   const shapesRef = useRef([]);
@@ -20,8 +25,13 @@ const NexusAuth = () => {
   const notificationRef = useRef(null);
 
   useEffect(() => {
+    // Detect post-signup state to show a persistent banner on Sign In
+    if (typeof window !== 'undefined' && window.sessionStorage?.getItem('justRegistered') === '1') {
+      setJustRegistered(true);
+    }
+
     // Show initial notification
-    setNotification({ message: 'Welcome to Nexus Secure Portal', type: 'info', show: true });
+    setNotification({ message: 'Welcome to OneFocus -_-', type: 'info', show: true });
     gsap.to('#notification', {
       duration: 0.7,
       x: 0,
@@ -279,6 +289,13 @@ const NexusAuth = () => {
     });
   };
 
+  const dismissJustRegistered = () => {
+    setJustRegistered(false);
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem('justRegistered');
+    }
+  };
+
   const showNotification = (message, type) => {
     setNotification({ message, type, show: true });
     gsap.to('#notification', {
@@ -302,6 +319,10 @@ const NexusAuth = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    // Clear the justRegistered hint when attempting to login
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem('justRegistered');
+    }
     const email = e.target.email.value.trim();
     const password = e.target.password.value.trim();
     const submitBtn = e.target.querySelector('button');
@@ -336,7 +357,14 @@ const NexusAuth = () => {
       await login(email, password);
       showNotification('Login successful! Redirecting...', 'success');
     } catch (error) {
-      showError('login', error.message || 'Invalid credentials.');
+      // If email not verified, keep user on Sign In and show a clear message
+      if (error?.code === 'auth/email-not-verified') {
+        // Re-show the post-signup banner and an inline hint
+        setJustRegistered(true);
+        showNotification('Please verify your email to continue.', 'info');
+      } else {
+        showError('login', error.message || 'Invalid credentials.');
+      }
     } finally {
       gsap.to(submitBtn, {
         duration: 0.5,
@@ -348,6 +376,53 @@ const NexusAuth = () => {
           gsap.to(submitBtn, { duration: 0.5, opacity: 1, scale: 1, ease: 'power4.out' });
         },
       });
+    }
+  };
+
+  const handleSocial = async (provider) => {
+    try {
+      if (provider === 'google') await loginWithGoogle();
+      if (provider === 'facebook') await loginWithFacebook();
+      if (provider === 'linkedin') await loginWithLinkedIn();
+      showNotification('Sign-in successful! Redirecting...', 'success');
+    } catch (error) {
+      showError('login', error.message || 'Social sign-in failed.');
+    }
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    const emailInput = document.getElementById('login-email');
+    const email = emailInput?.value?.trim();
+    if (!email) {
+      showError('login', 'Enter your email above, then click Forgot password.');
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      showError('login', 'Please enter a valid email.');
+      return;
+    }
+    try {
+      await forgotPassword(email);
+      showNotification('Password reset email sent. Check your inbox.', 'success');
+    } catch (err) {
+      showError('login', err.message || 'Unable to send reset email.');
+    }
+  };
+
+  const handleResendVerification = async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email')?.value?.trim();
+    const password = document.getElementById('login-password')?.value?.trim();
+    if (!email) {
+      showError('login', 'Enter your email (and password if possible) above, then click Resend.');
+      return;
+    }
+    try {
+      await resendVerification(email, password);
+      showNotification('Verification email sent. Please check your inbox.', 'success');
+    } catch (err) {
+      showError('login', err.message || 'Unable to resend verification email.');
     }
   };
 
@@ -393,7 +468,14 @@ const NexusAuth = () => {
 
     try {
       await register(email, password);
-      showNotification('Account created successfully!', 'success');
+      showNotification('Account created! We emailed you a verification link. Please verify, then sign in.', 'success');
+      // Mark just registered so we keep the user on the sign-in page without verify flicker
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem('justRegistered', '1');
+      }
+      // Move user to login panel and ensure we are on the sign-in route
+      handlePanelToggle('login');
+      navigate('/getstarted', { replace: true });
     } catch (error) {
       showError('register', error.message || 'Registration failed.');
     } finally {
@@ -607,16 +689,48 @@ const NexusAuth = () => {
         <div className="form-container login-container">
           <form onSubmit={handleLogin} className="flex flex-col w-full p-6">
             <h2 className="font-bold text-3xl text-gray-800 mb-6 text-shadow-md">Sign In</h2>
+            {(justRegistered) && (
+              <div className="mb-4 rounded-md border border-yellow-300 bg-yellow-50 text-yellow-800 p-3 flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold">Please verify your email</p>
+                  <p className="text-sm">We’ve sent a verification link to your email. Verify to continue, or you can sign in after verification.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={async () => {
+                    try {
+                      setCheckingVerify(true);
+                      if (auth.currentUser) {
+                        await auth.currentUser.reload();
+                        await refreshUser();
+                        if (auth.currentUser?.emailVerified) {
+                          const key = auth.currentUser?.uid ? `emailJustVerified:${auth.currentUser.uid}` : null;
+                          if (key && typeof window !== 'undefined') {
+                            window.localStorage.setItem(key, '1');
+                          }
+                          navigate('/dashboard', { replace: true });
+                          return;
+                        }
+                      }
+                    } finally {
+                      setCheckingVerify(false);
+                    }
+                  }} className="text-yellow-700 hover:text-yellow-900 text-sm underline disabled:opacity-60" disabled={checkingVerify}>
+                    {checkingVerify ? 'Checking…' : "I've verified"}
+                  </button>
+                  <button type="button" onClick={dismissJustRegistered} className="text-yellow-700 hover:text-yellow-900 text-sm">Dismiss</button>
+                </div>
+              </div>
+            )}
             <div className="social-container flex justify-center gap-4 mb-6">
-              <a href="#" className="social border-2 border-purple-600 border-opacity-30 rounded-full w-12 h-12 flex items-center justify-center text-purple-600 bg-white bg-opacity-90 hover:bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300" aria-label="Sign in with Facebook">
+              <button type="button" onClick={() => handleSocial('facebook')} className="social border-2 border-purple-600 border-opacity-30 rounded-full w-12 h-12 flex items-center justify-center text-purple-600 bg-white bg-opacity-90 hover:bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300" aria-label="Sign in with Facebook">
                 <i className="fab fa-facebook-f"></i>
-              </a>
-              <a href="#" className="social border-2 border-purple-600 border-opacity-30 rounded-full w-12 h-12 flex items-center justify-center text-purple-600 bg-white bg-opacity-90 hover:bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300" aria-label="Sign in with Google">
+              </button>
+              <button type="button" onClick={() => handleSocial('google')} className="social border-2 border-purple-600 border-opacity-30 rounded-full w-12 h-12 flex items-center justify-center text-purple-600 bg-white bg-opacity-90 hover:bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300" aria-label="Sign in with Google">
                 <i className="fab fa-google"></i>
-              </a>
-              <a href="#" className="social border-2 border-purple-600 border-opacity-30 rounded-full w-12 h-12 flex items-center justify-center text-purple-600 bg-white bg-opacity-90 hover:bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300" aria-label="Sign in with LinkedIn">
+              </button>
+              <button type="button" onClick={() => handleSocial('linkedin')} className="social border-2 border-purple-600 border-opacity-30 rounded-full w-12 h-12 flex items-center justify-center text-purple-600 bg-white bg-opacity-90 hover:bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300" aria-label="Sign in with LinkedIn">
                 <i className="fab fa-linkedin-in"></i>
-              </a>
+              </button>
             </div>
             <span className="text-gray-600 mb-4">or use your account</span>
             <div className="input-box relative mb-4">
@@ -632,7 +746,11 @@ const NexusAuth = () => {
               <i className="bx bxs-lock-alt icon absolute top-1/2 left-4 transform -translate-y-1/2 text-purple-600 text-lg"></i>
               <i className="bx bx-hide toggle-password absolute top-1/2 right-4 transform -translate-y-1/2 text-gray-600 text-lg cursor-pointer hover:text-purple-600 transition-colors duration-300" onClick={() => togglePassword('login-password')}></i>
             </div>
-            <a href="#" className="forgot-password text-purple-600 text-sm mb-4 hover:underline hover:text-pink-600 transition-colors duration-300">Forgot your password?</a>
+            <div className="flex items-center gap-4 mb-4 text-sm">
+              <a href="#" onClick={handleForgotPassword} className="forgot-password text-purple-600 hover:underline hover:text-pink-600 transition-colors duration-300">Forgot your password?</a>
+              <span className="text-gray-400">|</span>
+              <a href="#" onClick={handleResendVerification} className="text-purple-600 hover:underline hover:text-pink-600 transition-colors duration-300">Resend verification email</a>
+            </div>
             <button type="submit" className="rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-4 uppercase cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
               onMouseEnter={e => !e.target.disabled && gsap.to(e.target, { duration: 0.5, scale: 1.07, boxShadow: '0 9px 28px rgba(126, 48, 225, 0.6)', background: 'linear-gradient(45deg, #06b6d4, #7e30e1)', ease: 'power4.out' })}
               onMouseLeave={e => gsap.to(e.target, { duration: 0.5, scale: 1, boxShadow: 'none', background: 'linear-gradient(45deg, #7e30e1, #06b6d4)', ease: 'power4.out' })}>Sign In</button>
@@ -648,15 +766,15 @@ const NexusAuth = () => {
           <form onSubmit={handleRegister} className="flex flex-col w-full p-6">
             <h2 className="font-bold text-3xl text-gray-800 mb-6 text-shadow-md">Create Account</h2>
             <div className="social-container flex justify-center gap-4 mb-6">
-              <a href="#" className="social border-2 border-purple-600 border-opacity-30 rounded-full w-12 h-12 flex items-center justify-center text-purple-600 bg-white bg-opacity-90 hover:bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300" aria-label="Sign up with Facebook">
+              <button type="button" onClick={() => handleSocial('facebook')} className="social border-2 border-purple-600 border-opacity-30 rounded-full w-12 h-12 flex items-center justify-center text-purple-600 bg-white bg-opacity-90 hover:bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300" aria-label="Sign up with Facebook">
                 <i className="fab fa-facebook-f"></i>
-              </a>
-              <a href="#" className="social border-2 border-purple-600 border-opacity-30 rounded-full w-12 h-12 flex items-center justify-center text-purple-600 bg-white bg-opacity-90 hover:bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300" aria-label="Sign up with Google">
+              </button>
+              <button type="button" onClick={() => handleSocial('google')} className="social border-2 border-purple-600 border-opacity-30 rounded-full w-12 h-12 flex items-center justify-center text-purple-600 bg-white bg-opacity-90 hover:bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300" aria-label="Sign up with Google">
                 <i className="fab fa-google"></i>
-              </a>
-              <a href="#" className="social border-2 border-purple-600 border-opacity-30 rounded-full w-12 h-12 flex items-center justify-center text-purple-600 bg-white bg-opacity-90 hover:bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300" aria-label="Sign up with LinkedIn">
+              </button>
+              <button type="button" onClick={() => handleSocial('linkedin')} className="social border-2 border-purple-600 border-opacity-30 rounded-full w-12 h-12 flex items-center justify-center text-purple-600 bg-white bg-opacity-90 hover:bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300" aria-label="Sign up with LinkedIn">
                 <i className="fab fa-linkedin-in"></i>
-              </a>
+              </button>
             </div>
             <span className="text-gray-600 mb-4">or use your email for registration</span>
             <div className="input-box relative mb-4">
@@ -778,4 +896,4 @@ const NexusAuth = () => {
   );
 };
 
-export default NexusAuth;
+export default NexusAuth; 

@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { 
   auth, 
-  googleProvider // Make sure you have this in your firebase config
+  googleProvider,
+  facebookProvider,
+  linkedinProvider
 } from '../firebase/config';
 import { 
-  onAuthStateChanged, 
+  onAuthStateChanged,
+  onIdTokenChanged, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signOut, 
@@ -19,28 +22,96 @@ export const useAuth = () => {
 
   // Listen for auth state changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    const unsubAuth = onAuthStateChanged(auth, (u) => {
+      setUser(u);
       setLoading(false);
     });
-    return unsubscribe;
+    const unsubToken = onIdTokenChanged(auth, (u) => {
+      // Keep user in sync when ID token refreshes (e.g., after reload())
+      setUser(u);
+    });
+    return () => {
+      unsubAuth();
+      unsubToken();
+    };
   }, []);
 
   // Email & password login
   const login = async (email, password) => {
-    return signInWithEmailAndPassword(auth, email, password);
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    if (!cred.user.emailVerified) {
+      try {
+        await sendEmailVerification(cred.user);
+      } catch (_) {
+        // ignore send errors; we'll still block login
+      }
+      const err = new Error('Please verify your email. We just sent you a verification link.');
+      err.code = 'auth/email-not-verified';
+      throw err;
+    }
+    return cred;
   };
 
   // Email & password registration with email verification
   const register = async (email, password) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    await sendEmailVerification(userCredential.user); // Send OTP/email verification
+    const actionCodeSettings = {
+      url: window.location.origin,
+      handleCodeInApp: false
+    };
+    await sendEmailVerification(userCredential.user, actionCodeSettings);
+    // Sign out to ensure unverified users don't remain authenticated
+    await signOut(auth);
     return userCredential;
+  };
+
+  // Resend email verification
+  const resendVerification = async (email, password) => {
+    // If user is logged in but unverified
+    if (auth.currentUser && !auth.currentUser.emailVerified) {
+      await sendEmailVerification(auth.currentUser);
+      return true;
+    }
+    // If no current user, optionally sign in silently to send
+    if (email && password) {
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      try {
+        await sendEmailVerification(cred.user);
+      } finally {
+        await signOut(auth);
+      }
+      return true;
+    }
+    const err = new Error('Please sign in first or provide email and password to resend verification.');
+    err.code = 'auth/resend-requires-auth';
+    throw err;
+  };
+
+  // Explicitly refresh the current user and sync context
+  const refreshUser = async () => {
+    if (auth.currentUser) {
+      await auth.currentUser.reload();
+      setUser(auth.currentUser);
+      return auth.currentUser;
+    }
+    return null;
   };
 
   // Sign in with Google
   const loginWithGoogle = async () => {
     const result = await signInWithPopup(auth, googleProvider);
+    return result.user;
+  };
+
+  // Sign in with Facebook
+  const loginWithFacebook = async () => {
+    const result = await signInWithPopup(auth, facebookProvider);
+    return result.user;
+  };
+
+  // Sign in with LinkedIn (via OIDC provider configured in Firebase)
+  const loginWithLinkedIn = async () => {
+    const result = await signInWithPopup(auth, linkedinProvider);
     return result.user;
   };
 
@@ -59,7 +130,11 @@ export const useAuth = () => {
     loading, 
     login, 
     register, 
-    loginWithGoogle, 
+    loginWithGoogle,
+    loginWithFacebook,
+    loginWithLinkedIn,
+    resendVerification,
+    refreshUser,
     forgotPassword, 
     logout 
   };

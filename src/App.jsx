@@ -305,7 +305,7 @@
 
 // export default App;
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import LandingPage from './components/HOMEPAGE/LandingPage';
@@ -315,17 +315,39 @@ import Analytics from './components/Analytics/Analytics';
 import Compete from './components/Compete/Compete';
 import Settings from './components/Settings/Settings';
 import { Toaster } from 'react-hot-toast';
+import GlobalBackground from './components/Layout/GlobalBackground';
 import AIChatWidget from './components/Dashboard/AIchat';
 import NexusAuth from './components/Auth/NexusAuth';
 import About from './components/HOMEPAGE/About';
+import VerifyEmail from './components/Auth/VerifyEmail';
 function App() {
   const { user, loading } = useAuth();
+  const verifiedKey = (typeof window !== 'undefined' && user?.uid) ? `emailJustVerified:${user.uid}` : null;
+  const isVerified = !!(user && (
+    user.emailVerified || (
+      typeof window !== 'undefined' && verifiedKey && window.localStorage?.getItem(verifiedKey) === '1'
+    )
+  ));
 
   useEffect(() => {
     if (user) {
       initializeUser();
     }
   }, [user]);
+
+  // Clear one-shot emailJustVerified flag only when Firebase reports verified
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Clean up legacy global flag, if it exists
+      if (window.localStorage.getItem('emailJustVerified')) {
+        window.localStorage.removeItem('emailJustVerified');
+      }
+      // Remove scoped flag once Firebase confirms verified
+      if (user?.emailVerified && verifiedKey) {
+        window.localStorage.removeItem(verifiedKey);
+      }
+    }
+  }, [user?.emailVerified, verifiedKey]);
 
   const initializeUser = async () => {
     try {
@@ -358,24 +380,39 @@ function App() {
     <>
       <Toaster position="top-right" />
 
-      <div className="bg-gradient min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 bg-[length:400%_400%]">
-        {user && <Navbar />}
+      {/* Global background shared across all pages */}
+      <GlobalBackground />
 
-        <main className={user ? "pt-16 min-h-[calc(100vh-4rem)]" : ""}>
+      {/* App shell uses transparent bg to reveal global background */}
+      <div className="min-h-screen">
+        {user && isVerified && <Navbar />}
+
+  <main className={user ? "pt-16 min-h-[calc(100vh-4rem)]" : "min-h-screen"}>
           <Routes>
             {/* Public routes */}
             {!user && <Route path="/" element={<LandingPage />} />}
-            {!user && (
-              <Route
-                path="/getstarted"
-                element={
-                  <div className="min-h-screen flex items-center justify-center p-4">
-                    <NexusAuth />
-                  </div>
-                }
-              />
-              
-            )}
+
+            {/* Get Started route is always available to avoid flicker after signup */}
+            <Route
+              path="/getstarted"
+              element={
+                user
+                  ? (
+                    isVerified
+                      ? <Navigate to="/dashboard" replace />
+                      : (
+                          <div className="min-h-screen flex items-center justify-center p-4">
+                            <NexusAuth />
+                          </div>
+                        )
+                  )
+                  : (
+                    <div className="min-h-screen flex items-center justify-center p-4">
+                      <NexusAuth />
+                    </div>
+                  )
+              }
+            />
 
             {!user && (
               <Route
@@ -386,11 +423,24 @@ function App() {
                   </div>
                 }
               />
-              
             )}
 
-            {/* Protected routes */}
-            {user && (
+            {/* Email verification screen; if verified, redirect to dashboard; if just registered, return to getstarted */}
+            <Route
+              path="/verify-email"
+              element={
+                isVerified
+                  ? <Navigate to="/dashboard" replace />
+                  : (
+                      (typeof window !== 'undefined' && window.sessionStorage?.getItem('justRegistered') === '1')
+                        ? <Navigate to="/getstarted" replace />
+                        : <VerifyEmail />
+                    )
+              }
+            />
+
+            {/* Protected routes (only for verified users) */}
+            {user && isVerified && (
               <>
                 <Route path="/dashboard" element={<Dashboard user={user} />} />
                 <Route path="/analytics" element={<Analytics />} />
@@ -402,13 +452,24 @@ function App() {
             {/* Redirects */}
             <Route
               path="*"
-              element={<Navigate to={user ? '/dashboard' : '/'} replace />}
+              element={
+                user ? (
+                  isVerified ? (
+                    <Navigate to="/dashboard" replace />
+                  ) : (
+                    <Navigate to="/getstarted" replace />
+                  )
+                ) : (
+                  // Do not redirect guests to '/'; just show LandingPage content on unknown paths
+                  <LandingPage />
+                )
+              }
             />
           </Routes>
         </main>
       </div>
 
-      {user && <AIChatWidget />}
+  {user && isVerified && <AIChatWidget />}
     </>
   );
 }

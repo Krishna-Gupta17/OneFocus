@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth,GoogleAuthProvider } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, FacebookAuthProvider, OAuthProvider } from 'firebase/auth';
 import { getFirestore, collection,   doc,addDoc, getDocs, query, orderBy ,where, serverTimestamp,  deleteDoc,} from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -20,5 +20,19 @@ const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
+// Facebook provider
+const facebookProvider = new FacebookAuthProvider();
+facebookProvider.setCustomParameters({
+  display: 'popup'
+});
+facebookProvider.addScope('email');
+// LinkedIn via generic OIDC provider (configure in Firebase Auth as an OpenID Connect provider)
+// Ensure you create an OIDC provider in Firebase Console with ID 'oidc.linkedin'
+const linkedinProvider = new OAuthProvider('oidc.linkedin');
+linkedinProvider.addScope('openid');
+linkedinProvider.addScope('profile');
+linkedinProvider.addScope('email');
+// Optional: set custom parameters like prompt/login_hint if needed
+
 export default app;
-export { db, messagesCollection,googleProvider ,addDoc,  doc, getDocs, query, orderBy, where ,  deleteDoc,serverTimestamp};
+export { db, messagesCollection, googleProvider, facebookProvider, linkedinProvider, addDoc,  doc, getDocs, query, orderBy, where ,  deleteDoc,serverTimestamp};
