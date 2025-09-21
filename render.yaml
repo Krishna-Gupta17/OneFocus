@@ -5,15 +5,7 @@ services:
     buildCommand: npm run build
     staticPublishPath: dist
     routes:
-      # Serve real files first (JS/CSS/images)
-      - type: rewrite
-        source: /assets/*
-        destination: /assets/:splat
-      - type: rewrite
-        source: /favicon.*
-        destination: /favicon.ico
-
-      # SPA fallback: rewrite all other paths to index.html
+      # SPA fallback: let the client router handle deep links
       - type: rewrite
         source: /*
         destination: /index.html
