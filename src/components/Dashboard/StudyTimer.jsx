@@ -29,12 +29,12 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
       !manualPause &&
       eyesDetected === true &&
       eyesNotDetectedSeconds === 0 &&
-      sessionStartTime
+  sessionStartTime && autoPausedByEyesRef.current
     ) {
       setTimeout(() => {
         setIsActive(true);
         onTimerStart?.();
-  toast.success('Timer resumed - Retina detected!');
+        safeToast('resume-retina', () => toast.success('Timer resumed - Retina detected!'));
         // Success animation
         gsap.to(timerRef.current, {
           boxShadow: '0 0 30px #10b981, 0 0 60px #10b981',
@@ -61,7 +61,8 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
             setManualPause(false);
             setPausedTime(p => p + 1);
             onTimerPause?.();
-            toast.error('Timer paused - Retina not detected for 20 seconds!');
+            // Avoid duplicate pause toast; FocusTracker already shows one
+            autoPausedByEyesRef.current = true;
             return 0;
           }
           return prev + 1;
@@ -83,6 +84,17 @@ const isActiveRef = useRef(false);
 const wasRunningBeforeHiddenRef = useRef(false);
 const pauseStartRef = useRef(null);
 
+  // Toast throttling and auto-pause cause tracking
+  const autoPausedByEyesRef = useRef(false);
+  const lastToastRef = useRef({ key: '', time: 0 });
+  const safeToast = (key, action, cooldownMs = 6000) => {
+    const now = Date.now();
+    if (lastToastRef.current.key !== key || now - lastToastRef.current.time > cooldownMs) {
+      lastToastRef.current = { key, time: now };
+      try { action(); } catch (_) {}
+    }
+  };
+
 useEffect(() => {
   isActiveRef.current = isActive;
 }, [isActive]);
@@ -96,7 +108,7 @@ const handleVisibilityChange = () => {
       setIsActive(false);
       onTimerPause?.();
       pauseStartRef.current = Date.now();
-      toast('Timer paused - tab hidden');
+  safeToast('tab-hidden', () => toast('Timer paused - tab hidden'), 5000);
     } else {
       wasRunningBeforeHiddenRef.current = false;
     }
@@ -112,7 +124,7 @@ const handleVisibilityChange = () => {
         pauseStartRef.current = null;
       }
 
-      toast('Timer resumed - tab visible');
+  safeToast('tab-visible', () => toast('Timer resumed - tab visible'), 5000);
     }
   }
 };
@@ -139,7 +151,7 @@ useEffect(() => {
     // Auto-pause when focus drops below threshold
     if (isActive && focusLevel < userSettings.focusThreshold && sessionType === 'focus') {
       setIsActive(false);
-      toast.error(`Timer paused - Focus level below ${userSettings.focusThreshold}%!`);
+  safeToast('focus-low', () => toast.error(`Timer paused - Focus level below ${userSettings.focusThreshold}%!`), 6000);
       onFocusThresholdReached?.();
       onTimerPause?.();
       
