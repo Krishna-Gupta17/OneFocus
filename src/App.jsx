@@ -320,6 +320,7 @@ import AIChatWidget from './components/Dashboard/AIchat';
 import NexusAuth from './components/Auth/NexusAuth';
 import About from './components/HOMEPAGE/About';
 import VerifyEmail from './components/Auth/VerifyEmail';
+import Footer from './components/HOMEPAGE/Footer';
 function App() {
   const { user, loading } = useAuth();
   const verifiedKey = (typeof window !== 'undefined' && user?.uid) ? `emailJustVerified:${user.uid}` : null;
@@ -384,10 +385,10 @@ function App() {
       <GlobalBackground />
 
       {/* App shell uses transparent bg to reveal global background */}
-      <div className="min-h-screen">
+      <div className="min-h-screen flex flex-col">
         {user && isVerified && <Navbar />}
 
-  <main className={user ? "pt-16 min-h-[calc(100vh-4rem)]" : "min-h-screen"}>
+        <main className={user ? "pt-16 flex-1" : "flex-1"}>
           <Routes>
             {/* Public routes */}
             {!user && <Route path="/" element={<LandingPage />} />}
@@ -467,6 +468,9 @@ function App() {
             />
           </Routes>
         </main>
+
+        {/* Global Footer on every page */}
+        <Footer />
       </div>
 
   {user && isVerified && <AIChatWidget />}
