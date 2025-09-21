@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { PlayIcon, PauseIcon, StopIcon, ClockIcon, CogIcon } from '@heroicons/react/24/solid';
 import { gsap } from 'gsap';
 import { useAuth } from '../../hooks/useAuth';
 import toast from 'react-hot-toast';
 
-const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, onTimerStart, onTimerPause }) => {
+const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, onTimerStart, onTimerPause, eyesDetected }) => {
   const [customTime, setCustomTime] = useState(25);
   const [time, setTime] = useState(25 * 60);
   const [isActive, setIsActive] = useState(false);
@@ -18,6 +19,59 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
     breakDuration: 5
   });
   const [manualPause, setManualPause] = useState(false);
+  const [eyesNotDetectedSeconds, setEyesNotDetectedSeconds] = useState(0);
+  // Pause timer if eyes not detected for 20 seconds
+    // Resume timer if eyes detected again after being paused due to eyes not detected
+  useEffect(() => {
+    if (
+      sessionType === 'focus' &&
+      !isActive &&
+      !manualPause &&
+      eyesDetected === true &&
+      eyesNotDetectedSeconds === 0 &&
+      sessionStartTime
+    ) {
+      setTimeout(() => {
+        setIsActive(true);
+        onTimerStart?.();
+  toast.success('Timer resumed - Retina detected!');
+        // Success animation
+        gsap.to(timerRef.current, {
+          boxShadow: '0 0 30px #10b981, 0 0 60px #10b981',
+          duration: 0.5,
+          yoyo: true,
+          repeat: 1
+        });
+      }, 1000);
+    }
+  }, [eyesDetected, isActive, manualPause, sessionType, sessionStartTime, eyesNotDetectedSeconds, onTimerStart]);
+  useEffect(() => {
+    if (!isActive || sessionType !== 'focus') {
+      setEyesNotDetectedSeconds(0);
+      return;
+    }
+    let interval = null;
+    if (eyesDetected === false) {
+      interval = setInterval(() => {
+        setEyesNotDetectedSeconds(prev => {
+          if (prev + 1 >= 20) {
+            setIsActive(false);
+            // Auto pause due to eyes not detected should NOT set manualPause,
+            // so that auto-resume can trigger when eyes are detected again.
+            setManualPause(false);
+            setPausedTime(p => p + 1);
+            onTimerPause?.();
+            toast.error('Timer paused - Retina not detected for 20 seconds!');
+            return 0;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+    } else {
+      setEyesNotDetectedSeconds(0);
+    }
+    return () => clearInterval(interval);
+  }, [eyesDetected, isActive, sessionType, onTimerPause]);
   const [tabSwitches, setTabSwitches] = useState(0);
   const [isTabVisible, setIsTabVisible] = useState(true);
   const [wasRunningBeforeHidden, setWasRunningBeforeHidden] = useState(false);
@@ -25,40 +79,49 @@ const StudyTimer = ({ onSessionComplete, focusLevel, onFocusThresholdReached, on
   const timerRef = useRef(null);
   const floatAnimation = useRef(null);
   const { user } = useAuth();
-  const isActiveRef = useRef(isActive);
-const wasRunningBeforeHiddenRef = useRef(wasRunningBeforeHidden);
+const isActiveRef = useRef(false);
+const wasRunningBeforeHiddenRef = useRef(false);
+const pauseStartRef = useRef(null);
 
 useEffect(() => {
   isActiveRef.current = isActive;
-  wasRunningBeforeHiddenRef.current = wasRunningBeforeHidden;
-}, [isActive, wasRunningBeforeHidden]);
+}, [isActive]);
+
+const handleVisibilityChange = () => {
+  if (document.hidden) {
+    setIsTabVisible(false);
+    if (isActiveRef.current) {
+      wasRunningBeforeHiddenRef.current = true;
+      setTabSwitches(prev => prev + 1);
+      setIsActive(false);
+      onTimerPause?.();
+      pauseStartRef.current = Date.now();
+      toast('Timer paused - tab hidden');
+    } else {
+      wasRunningBeforeHiddenRef.current = false;
+    }
+  } else {
+    setIsTabVisible(true);
+    if (wasRunningBeforeHiddenRef.current) {
+      setIsActive(true);
+      onTimerStart?.();
+
+      // add paused duration
+      if (pauseStartRef.current) {
+        setPausedTime(prev => prev + Math.floor((Date.now() - pauseStartRef.current) / 1000));
+        pauseStartRef.current = null;
+      }
+
+      toast('Timer resumed - tab visible');
+    }
+  }
+};
 
 useEffect(() => {
-  const handleVisibilityChange = () => {
-    if (document.hidden) {
-      setIsTabVisible(false);
-      if (isActiveRef.current) {
-        setWasRunningBeforeHidden(true);
-        setTabSwitches(prev => prev + 1);
-        setIsActive(false);
-        onTimerPause?.();
-        toast('Timer paused - tab hidden');
-      } else {
-        setWasRunningBeforeHidden(false);
-      }
-    } else {
-      setIsTabVisible(true);
-      if (wasRunningBeforeHiddenRef.current) {
-        setIsActive(true);
-        onTimerStart?.();
-        toast('Timer resumed - tab visible');
-      }
-    }
-  };
-
   document.addEventListener('visibilitychange', handleVisibilityChange);
   return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-}, [onTimerPause, onTimerStart]);
+}, []);
+
 
   useEffect(() => {
     let interval = null;
@@ -443,13 +506,15 @@ useEffect(() => {
               style={{ width: `${progress}%` }}
             ></div>
           </div>
-          
+
           <div className="flex justify-between text-xs text-white/60">
             <span>Tab Switches: {tabSwitches}</span>
             {pausedTime > 0 && (
               <span>Paused: {pausedTime} time{pausedTime > 1 ? 's' : ''}</span>
             )}
           </div>
+
+          {/* Eyes-not-detected indicator intentionally hidden here; shown in FocusTracker UI */}
         </div>
       </div>
     </div>

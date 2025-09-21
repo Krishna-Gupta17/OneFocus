@@ -158,13 +158,13 @@ const Hero = () => {
         <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-2xl mx-auto">
           <div className="text-center group">
             <div className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent group-hover:scale-110 transition-transform duration-300">
-              1st
+              1st "CSSE"
             </div>
             <div className="text-slate-400 mt-2">Hackathon Ranking</div>
           </div>
           <div className="text-center group">
             <div className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent group-hover:scale-110 transition-transform duration-300">
-              95%
+              85%
             </div>
             <div className="text-slate-400 mt-2">Focus Improvement</div>
           </div>

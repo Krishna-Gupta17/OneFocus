@@ -47,10 +47,37 @@ const FocusTracker = ({ onFocusChange }) => {
     };
   }, []);
 
+  // Helper to calculate Eye Aspect Ratio (EAR)
+  const calculateEAR = (landmarks, leftIndices, rightIndices) => {
+    // EAR formula: (||p2-p6|| + ||p3-p5||) / (2 * ||p1-p4||)
+    const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+    // Left eye
+    const leftEAR = (
+      dist(landmarks[leftIndices[1]], landmarks[leftIndices[5]]) +
+      dist(landmarks[leftIndices[2]], landmarks[leftIndices[4]])
+    ) / (2 * dist(landmarks[leftIndices[0]], landmarks[leftIndices[3]]));
+    // Right eye
+    const rightEAR = (
+      dist(landmarks[rightIndices[1]], landmarks[rightIndices[5]]) +
+      dist(landmarks[rightIndices[2]], landmarks[rightIndices[4]])
+    ) / (2 * dist(landmarks[rightIndices[0]], landmarks[rightIndices[3]]));
+    return (leftEAR + rightEAR) / 2;
+  };
+
+  // Indices for left and right eye landmarks (MediaPipe FaceMesh)
+  const LEFT_EYE_INDICES = [33, 160, 158, 133, 153, 144];
+  const RIGHT_EYE_INDICES = [263, 387, 385, 362, 380, 373];
+
   const handleResults = (results) => {
     const faceDetected = results?.multiFaceLandmarks?.length > 0;
-    const level = faceDetected ? 1 : 0;
-
+    let eyesOpen = false;
+    let level = -1; // -1: no face, 0: eyes closed, 1: eyes open
+    if (faceDetected) {
+      const landmarks = results.multiFaceLandmarks[0];
+      const ear = calculateEAR(landmarks, LEFT_EYE_INDICES, RIGHT_EYE_INDICES);
+      eyesOpen = ear > 0.22;
+      level = eyesOpen ? 1 : 0;
+    }
     setFocusLevel(level);
     onFocusChange?.(level);
 
@@ -61,7 +88,7 @@ const FocusTracker = ({ onFocusChange }) => {
       ctx.clearRect(0, 0, 320, 240);
 
       if (faceDetected) {
-        ctx.strokeStyle = 'red';
+        ctx.strokeStyle = eyesOpen ? 'red' : 'yellow';
         ctx.lineWidth = 1;
         for (let point of results.multiFaceLandmarks[0]) {
           ctx.beginPath();
@@ -75,11 +102,15 @@ const FocusTracker = ({ onFocusChange }) => {
   };
 
   const getFocusGradient = (score) => {
-    return score >= 1 ? 'from-green-500 to-emerald-500' : 'from-red-500 to-pink-500';
+    if (score === 1) return 'from-green-500 to-emerald-500';
+    if (score === 0) return 'from-yellow-500 to-orange-500';
+    return 'from-red-500 to-pink-500';
   };
 
   const getFocusMessage = (score) => {
-    return score >= 1 ? 'Face Detected 🎯' : 'No Face 😴';
+    if (score === 1) return 'Eyes Open 🎯';
+    if (score === 0) return 'Eyes Closed 😴';
+    return 'No Face Detected �';
   };
 
   return (
@@ -105,7 +136,7 @@ const FocusTracker = ({ onFocusChange }) => {
         <div className="w-full bg-white/10 rounded-full h-3 mb-2">
           <div
             className={`h-3 rounded-full bg-gradient-to-r ${getFocusGradient(focusLevel)} transition-all duration-1000`}
-            style={{ width: `${focusLevel * 100}%` }}
+            style={{ width: `${focusLevel === 1 ? 100 : focusLevel === 0 ? 50 : 0}%` }}
           ></div>
         </div>
       </div>

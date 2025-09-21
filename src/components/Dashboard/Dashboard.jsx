@@ -12,6 +12,7 @@ import { useAuth } from '../../hooks/useAuth';
 const Dashboard = ({ user }) => {
   const [tasks, setTasks] = useState([]);
   const [focusLevel, setFocusLevel] = useState(85);
+  const [eyesDetected, setEyesDetected] = useState(true);
   const [autoStartFocusTracker, setAutoStartFocusTracker] = useState(false);
   const [isTimerActive, setIsTimerActive] = useState(false);
   const [studyStats, setStudyStats] = useState({
@@ -83,8 +84,9 @@ const Dashboard = ({ user }) => {
     }));
   };
 
-  const handleFocusChange = (newFocusLevel) => {
+  const handleFocusChange = (newFocusLevel, eyesDetectedValue) => {
     setFocusLevel(newFocusLevel);
+    setEyesDetected(eyesDetectedValue);
   };
 
   const handleFocusThresholdReached = () => {
@@ -170,6 +172,7 @@ const Dashboard = ({ user }) => {
           <StudyTimer 
             onSessionComplete={handleSessionComplete} 
             focusLevel={focusLevel}
+            eyesDetected={eyesDetected}
             onFocusThresholdReached={handleFocusThresholdReached}
           />
         </div>
