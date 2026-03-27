@@ -140,7 +140,7 @@ const FriendsTab = ({ currentUser }) => {
               <UserIcon className="w-6 h-6 text-purple-400" />
               <div>
                 <p className="font-semibold">{friend.displayName || friend.email}</p>
-                <p className="text-sm text-white/60">⚪ Status unknown</p>
+                {/* <p className="text-sm text-white/60">⚪ Status unknown</p> */}
               </div>
             </li>
           ))}
